@@ -20,28 +20,15 @@
  * SOFTWARE.
  */
 
-package moe.maple.scheduler.tasks.tick;
+package moe.maple.scheduler.tasks;
 
-import moe.maple.scheduler.Task;
+public class MoeAsyncTask implements MoeTask {
 
-public class TickTask implements Task {
+    private final MoeTask actual;
+    private volatile boolean hasRun;
 
-    private final Task actual;
-    private final long tickCount;
-    private long iteration;
-
-    private boolean hasRun;
-
-    public TickTask(Task actual, long tickCount) {
-        if (tickCount == 0)
-            throw new IllegalArgumentException("Tick Count is 0, please.");
+    public MoeAsyncTask(MoeTask actual) {
         this.actual = actual;
-        this.tickCount = tickCount;
-    }
-
-    @Override
-    public boolean isEventAsync() {
-        return actual.isEventAsync();
     }
 
     @Override
@@ -50,13 +37,15 @@ public class TickTask implements Task {
     }
 
     @Override
-    public void update(long delta) {
-        iteration++;
+    public boolean isEventAsync() {
+        return true;
+    }
 
-        if (!hasRun && iteration >= tickCount) {
-            actual.update(delta);
-            iteration = 0;
+    @Override
+    public void update(long delta) {
+        if (!hasRun) {
             hasRun = true;
+            actual.update(delta);
         }
     }
 }

@@ -22,17 +22,18 @@
 
 package moe.maple.scheduler;
 
-import moe.maple.scheduler.tasks.AsyncTask;
-import moe.maple.scheduler.tasks.delay.DelayedTask;
-import moe.maple.scheduler.tasks.tick.TickTask;
+import moe.maple.scheduler.tasks.MoeAsyncTask;
+import moe.maple.scheduler.tasks.MoeTask;
+import moe.maple.scheduler.tasks.delay.MoeDelayedTask;
+import moe.maple.scheduler.tasks.tick.MoeTickTask;
 
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-public interface Scheduler {
+public interface MoeScheduler {
 
-    Telescope telescope();
+    MoeTelescope telescope();
 
     default <T> void future(Supplier<T> sup, Consumer<T> cons) {
         registerAsync(d1 -> {
@@ -41,31 +42,32 @@ public interface Scheduler {
         });
     }
 
-    default void registerAsync(Task original) {
-        register(new AsyncTask(original));
+    default void registerAsync(MoeTask original) {
+        register(new MoeAsyncTask(original));
     }
 
-    default void registerDelayed(Task original, long delay, long start) {
-        register(new DelayedTask(original, delay, start));
+    default void registerDelayed(MoeTask original, long delay, long start) {
+        register(new MoeDelayedTask(original, delay, start));
     }
 
-    default void registerDelayed(Task original, long delay) {
+    default void registerDelayed(MoeTask original, long delay) {
         registerDelayed(original, delay, System.currentTimeMillis());
     }
 
-    default void registerTick(Task original, long ticks) {
-        register(new TickTask(original, ticks));
+    default void registerTick(MoeTask original, long ticks) {
+        register(new MoeTickTask(original, ticks));
     }
 
-    void register(Task update);
+    void register(MoeTask task);
 
-    void unregister(Task update);
+    void unregister(MoeTask task);
 
-    void remove(Predicate<Task> check);
+    void remove(Predicate<MoeTask> check);
 
     void start();
 
     void stop();
 
     int DEFAULT_PERIOD = 20;
+    int THREADS = Runtime.getRuntime().availableProcessors();
 }

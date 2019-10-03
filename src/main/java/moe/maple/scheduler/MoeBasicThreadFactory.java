@@ -20,44 +20,30 @@
  * SOFTWARE.
  */
 
-package moe.maple.scheduler.tasks.delay;
+package moe.maple.scheduler;
 
-import moe.maple.scheduler.Task;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class DelayedTask implements Task {
+public class MoeBasicThreadFactory implements ThreadFactory {
 
-    private final Task actual;
-    private final long start, delay;
+    private final String name;
+    private AtomicInteger counter;
 
-    private boolean hasRun;
-
-    public DelayedTask(Task actual, long delay, long start) {
-        if (actual == null)
-            throw new IllegalArgumentException("Delayed task is set to null.");
-        this.actual = actual;
-        this.delay = delay;
-        this.start = start;
+    public MoeBasicThreadFactory(String name) {
+        if (name == null || name.isEmpty())
+            throw new IllegalArgumentException("Invalid name: "+name);
+        this.name = name.concat("-");
+        this.counter = new AtomicInteger();
     }
 
-    public DelayedTask(Task actual, long delay) {
-        this(actual, delay, System.currentTimeMillis());
-    }
-
-    @Override
-    public boolean isEventAsync() {
-        return actual.isEventAsync();
+    public MoeBasicThreadFactory() {
+        this("moe");
     }
 
     @Override
-    public boolean isEventDone() {
-        return hasRun;
-    }
-
-    @Override
-    public void update(long delta) {
-        if (!hasRun && delta - start >= delay) {
-            actual.update(delta);
-            hasRun = true;
-        }
+    public Thread newThread(Runnable r) {
+        // todo setUncaughtExceptionHandler
+        return new Thread(r, name.concat(String.valueOf(counter.incrementAndGet())));
     }
 }

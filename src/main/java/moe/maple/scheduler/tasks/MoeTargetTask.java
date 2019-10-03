@@ -20,40 +20,22 @@
  * SOFTWARE.
  */
 
-package moe.maple.scheduler.tasks.tick;
+package moe.maple.scheduler.tasks;
 
-import moe.maple.scheduler.Task;
+@FunctionalInterface
+public interface MoeTargetTask<T> {
 
-public class RepeatingTickTask implements Task {
-
-    private final Task actual;
-    private final long tickCount;
-    private long iteration;
-
-    public RepeatingTickTask(Task actual, long tickCount) {
-        if (tickCount == 0)
-            throw new IllegalArgumentException("Tick Count is 0, please.");
-        this.actual = actual;
-        this.tickCount = tickCount;
+    default boolean isEventAsync() {
+        return false;
     }
 
-    @Override
-    public boolean isEventAsync() {
-        return actual.isEventAsync();
+    default boolean isEventDone() {
+        return false;
     }
 
-    @Override
-    public boolean isEventDone() {
-        return actual.isEventDone();
-    }
+    void update(long delta, T object);
 
-    @Override
-    public void update(long delta) {
-        iteration++;
-
-        if (iteration >= tickCount) {
-            actual.update(delta);
-            iteration = 0;
-        }
+    default void update(T object) {
+        update(System.currentTimeMillis(), object);
     }
 }

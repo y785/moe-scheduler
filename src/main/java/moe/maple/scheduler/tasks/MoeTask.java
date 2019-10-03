@@ -22,32 +22,24 @@
 
 package moe.maple.scheduler.tasks;
 
-import moe.maple.scheduler.Task;
+@FunctionalInterface
+public interface MoeTask {
 
-public class AsyncTask implements Task {
-
-    private final Task actual;
-    private volatile boolean hasRun;
-
-    public AsyncTask(Task actual) {
-        this.actual = actual;
+    default boolean isEventAsync() {
+        return false;
     }
 
-    @Override
-    public boolean isEventDone() {
-        return hasRun;
+    default boolean isEventDone() {
+        return false;
     }
 
-    @Override
-    public boolean isEventAsync() {
-        return true;
-    }
+    /**
+     * This should not throw an exception.
+     * Please don't throw an exception from this. :^(
+     */
+    void update(long delta);
 
-    @Override
-    public void update(long delta) {
-        if (!hasRun) {
-            hasRun = true;
-            actual.update(delta);
-        }
+    default void update() {
+        update(System.currentTimeMillis());
     }
 }

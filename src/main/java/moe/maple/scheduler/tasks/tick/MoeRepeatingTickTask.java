@@ -20,26 +20,21 @@
  * SOFTWARE.
  */
 
-package moe.maple.scheduler.tasks.delay;
+package moe.maple.scheduler.tasks.tick;
 
-import moe.maple.scheduler.Task;
+import moe.maple.scheduler.tasks.MoeTask;
 
-public class RepeatingDelayedTask implements Task {
+public class MoeRepeatingTickTask implements MoeTask {
 
-    private final Task actual;
-    private final long delay;
-    private long start;
+    private final MoeTask actual;
+    private final long tickCount;
+    private long iteration;
 
-    public RepeatingDelayedTask(Task actual, long delay, long start) {
-        if (actual == null)
-            throw new IllegalArgumentException("Delayed task is set to null.");
+    public MoeRepeatingTickTask(MoeTask actual, long tickCount) {
+        if (tickCount == 0)
+            throw new IllegalArgumentException("Tick Count is 0, please.");
         this.actual = actual;
-        this.delay = delay;
-        this.start = start;
-    }
-
-    public RepeatingDelayedTask(Task actual, long delay) {
-        this(actual, delay, System.currentTimeMillis());
+        this.tickCount = tickCount;
     }
 
     @Override
@@ -54,9 +49,11 @@ public class RepeatingDelayedTask implements Task {
 
     @Override
     public void update(long delta) {
-        if (delta - start >= delay) {
-            start = delta;
+        iteration++;
+
+        if (iteration >= tickCount) {
             actual.update(delta);
+            iteration = 0;
         }
     }
 }

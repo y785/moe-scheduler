@@ -20,16 +20,44 @@
  * SOFTWARE.
  */
 
-package moe.maple.scheduler;
+package moe.maple.scheduler.tasks.delay;
 
-/**
- * A pojo to count the time/various stats of the event loop.
- * To make sure we're not dying slowly. :^(
- */
-public interface Telescope {
+import moe.maple.scheduler.tasks.MoeTask;
 
-    int max();
+public class MoeDelayedTask implements MoeTask {
 
-    float avg();
+    private final MoeTask actual;
+    private final long start, delay;
 
+    private boolean hasRun;
+
+    public MoeDelayedTask(MoeTask actual, long delay, long start) {
+        if (actual == null)
+            throw new IllegalArgumentException("Delayed task is set to null.");
+        this.actual = actual;
+        this.delay = delay;
+        this.start = start;
+    }
+
+    public MoeDelayedTask(MoeTask actual, long delay) {
+        this(actual, delay, System.currentTimeMillis());
+    }
+
+    @Override
+    public boolean isEventAsync() {
+        return actual.isEventAsync();
+    }
+
+    @Override
+    public boolean isEventDone() {
+        return hasRun;
+    }
+
+    @Override
+    public void update(long delta) {
+        if (!hasRun && delta - start >= delay) {
+            actual.update(delta);
+            hasRun = true;
+        }
+    }
 }

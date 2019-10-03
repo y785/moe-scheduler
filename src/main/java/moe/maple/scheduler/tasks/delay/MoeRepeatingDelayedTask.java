@@ -20,22 +20,43 @@
  * SOFTWARE.
  */
 
-package moe.maple.scheduler;
+package moe.maple.scheduler.tasks.delay;
 
-@FunctionalInterface
-public interface TargetTask<T> {
+import moe.maple.scheduler.tasks.MoeTask;
 
-    default boolean isEventAsync() {
-        return false;
+public class MoeRepeatingDelayedTask implements MoeTask {
+
+    private final MoeTask actual;
+    private final long delay;
+    private long start;
+
+    public MoeRepeatingDelayedTask(MoeTask actual, long delay, long start) {
+        if (actual == null)
+            throw new IllegalArgumentException("Delayed task is set to null.");
+        this.actual = actual;
+        this.delay = delay;
+        this.start = start;
     }
 
-    default boolean isEventDone() {
-        return false;
+    public MoeRepeatingDelayedTask(MoeTask actual, long delay) {
+        this(actual, delay, System.currentTimeMillis());
     }
 
-    void update(long delta, T object);
+    @Override
+    public boolean isEventAsync() {
+        return actual.isEventAsync();
+    }
 
-    default void update(T object) {
-        update(System.currentTimeMillis(), object);
+    @Override
+    public boolean isEventDone() {
+        return actual.isEventDone();
+    }
+
+    @Override
+    public void update(long delta) {
+        if (delta - start >= delay) {
+            start = delta;
+            actual.update(delta);
+        }
     }
 }
