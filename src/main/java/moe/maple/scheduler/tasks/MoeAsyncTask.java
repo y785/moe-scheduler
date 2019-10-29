@@ -25,15 +25,10 @@ package moe.maple.scheduler.tasks;
 public class MoeAsyncTask implements MoeTask {
 
     private final MoeTask actual;
-    private volatile boolean hasRun;
+    private volatile boolean running;
 
     public MoeAsyncTask(MoeTask actual) {
         this.actual = actual;
-    }
-
-    @Override
-    public boolean isEventDone() {
-        return hasRun;
     }
 
     @Override
@@ -42,10 +37,16 @@ public class MoeAsyncTask implements MoeTask {
     }
 
     @Override
+    public boolean isEventDone() {
+        return actual.isEventDone();
+    }
+
+    @Override
     public void update(long delta) {
-        if (!hasRun) {
-            hasRun = true;
+        if (!running) {
+            running = true;
             actual.update(delta);
+            running = false;
         }
     }
 }
