@@ -22,15 +22,16 @@
 
 package moe.maple.scheduler.tasks.delay;
 
+import moe.maple.scheduler.tasks.MoeHardTask;
 import moe.maple.scheduler.tasks.MoeTask;
 
 public class MoeRepeatingDelayedTask implements MoeTask {
 
-    private final MoeTask actual;
+    private final MoeHardTask actual;
     private final long delay;
     private long start;
 
-    public MoeRepeatingDelayedTask(MoeTask actual, long delay, long start) {
+    public MoeRepeatingDelayedTask(MoeHardTask actual, long delay, long start) {
         if (actual == null)
             throw new IllegalArgumentException("Delayed task is set to null.");
         this.actual = actual;
@@ -38,7 +39,7 @@ public class MoeRepeatingDelayedTask implements MoeTask {
         this.start = start;
     }
 
-    public MoeRepeatingDelayedTask(MoeTask actual, long delay) {
+    public MoeRepeatingDelayedTask(MoeHardTask actual, long delay) {
         this(actual, delay, System.currentTimeMillis());
     }
 
