@@ -22,24 +22,10 @@
 
 package moe.maple.scheduler.tasks;
 
-@FunctionalInterface
-public interface MoeTask {
+public interface MoeHardTask extends MoeTask {
 
-    default boolean isEventAsync() {
-        return false;
-    }
-
+    @Override
     default boolean isEventDone() {
-        return true;
-    }
-
-    /**
-     * This should not throw an exception.
-     * Please don't throw an exception from this. :^(
-     */
-    void update(long delta);
-
-    default void update() {
-        update(System.currentTimeMillis());
+        return false;
     }
 }

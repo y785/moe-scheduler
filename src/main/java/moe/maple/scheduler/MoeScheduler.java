@@ -36,10 +36,10 @@ public interface MoeScheduler {
     MoeTelescope telescope();
 
     default <T> void future(Supplier<T> sup, Consumer<T> cons) {
-        registerAsync(d1 -> {
+        registerAsync(new MoeDelayedTask((d1) -> {
             var a = sup.get();
             registerDelayed(d2 -> cons.accept(a), 0);
-        });
+        }, 0L));
     }
 
     default void registerAsync(MoeTask original) {
