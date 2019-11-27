@@ -27,9 +27,12 @@ import moe.maple.scheduler.tasks.MoeTask;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 public final class MoeBasicScheduler implements MoeScheduler {
+
+
 
     private final String name;
     private final int delay, period;
@@ -43,7 +46,10 @@ public final class MoeBasicScheduler implements MoeScheduler {
 
     private ScheduledFuture<?> updateLoop;
 
-    public MoeBasicScheduler(String name, int delay, int period) {
+    private Consumer<Exception> exceptionConsumer;
+
+    public MoeBasicScheduler(Consumer<Exception> exceptionConsumer, String name, int delay, int period) {
+        this.exceptionConsumer = exceptionConsumer;
         this.name = name;
         this.delay = delay;
         this.period = period;
@@ -61,9 +67,13 @@ public final class MoeBasicScheduler implements MoeScheduler {
         this.registry = ConcurrentHashMap.newKeySet();
     }
 
-    public MoeBasicScheduler(String name) { this(name, 0, MoeScheduler.DEFAULT_PERIOD); }
+    public MoeBasicScheduler(Consumer<Exception> exceptionConsumer, String name) {
+        this(exceptionConsumer, name, 0, MoeScheduler.DEFAULT_PERIOD);
+    }
 
-    public MoeBasicScheduler() { this("moe"); }
+    public MoeBasicScheduler() {
+        this(Throwable::printStackTrace, "moe");
+    }
 
     @Override
     public MoeTelescope telescope() { return telescope; }
@@ -94,12 +104,19 @@ public final class MoeBasicScheduler implements MoeScheduler {
             final var iter = registry.iterator();
             while (iter.hasNext()) {
                 final var task = iter.next();
-                if (task.isEventAsync())
-                    asyncExecutor.submit(() -> task.update(delta));
-                else
-                    task.update(delta);
-                if (task.isEventDone())
-                    iter.remove();
+                if (task.isEventAsync()) {
+                    asyncExecutor.submit(() -> {
+                        try {
+                            task.update(delta);
+                        } catch (Exception e) { exceptionConsumer.accept(e); }
+                    });
+                } else {
+                    try {
+                        task.update(delta);
+                    } catch (Exception e) { exceptionConsumer.accept(e); }
+                }
+
+                if (task.isEventDone()) iter.remove();
             }
             telescope.update(delta);
         }, delay, period, TimeUnit.MILLISECONDS);
