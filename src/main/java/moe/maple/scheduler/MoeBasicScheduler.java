@@ -94,12 +94,12 @@ public final class MoeBasicScheduler implements MoeScheduler {
             final var iter = registry.iterator();
             while (iter.hasNext()) {
                 final var task = iter.next();
-                if (task.isEventDone())
-                    iter.remove();
-                else if (task.isEventAsync())
+                if (task.isEventAsync())
                     asyncExecutor.submit(() -> task.update(delta));
                 else
                     task.update(delta);
+                if (task.isEventDone())
+                    iter.remove();
             }
             telescope.update(delta);
         }, delay, period, TimeUnit.MILLISECONDS);
