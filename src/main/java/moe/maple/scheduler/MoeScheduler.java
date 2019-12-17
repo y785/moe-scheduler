@@ -23,6 +23,7 @@
 package moe.maple.scheduler;
 
 import moe.maple.scheduler.tasks.MoeAsyncTask;
+import moe.maple.scheduler.tasks.MoeFutureTask;
 import moe.maple.scheduler.tasks.MoeTask;
 import moe.maple.scheduler.tasks.delay.MoeDelayedTask;
 import moe.maple.scheduler.tasks.tick.MoeTickTask;
@@ -46,12 +47,17 @@ public interface MoeScheduler {
         register(new MoeAsyncTask(original));
     }
 
-    default void registerDelayed(MoeTask original, long delay, long start) {
-        register(new MoeDelayedTask(original, delay, start));
+    default MoeFutureTask registerDelayed(MoeTask original, long delay, long start) {
+        if(original instanceof MoeFutureTask) {
+            throw new IllegalCallerException("Future tasks cannot be nested.");
+        }
+        var task = new MoeDelayedTask(original, delay, start);
+        register(task);
+        return task;
     }
 
-    default void registerDelayed(MoeTask original, long delay) {
-        registerDelayed(original, delay, System.currentTimeMillis());
+    default MoeFutureTask registerDelayed(MoeTask original, long delay) {
+        return registerDelayed(original, delay, System.currentTimeMillis());
     }
 
     default void registerTick(MoeTask original, long ticks) {
@@ -60,9 +66,9 @@ public interface MoeScheduler {
 
     void register(MoeTask task);
 
-    void unregister(MoeTask task);
+    boolean unregister(MoeTask task);
 
-    void remove(Predicate<MoeTask> check);
+    boolean remove(Predicate<MoeTask> check);
 
     void start();
 

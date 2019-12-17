@@ -85,14 +85,14 @@ public final class MoeBasicScheduler implements MoeScheduler {
     }
 
     @Override
-    public void unregister(MoeTask task) {
+    public boolean unregister(MoeTask task) {
         Objects.requireNonNull(task);
-        registry.remove(task);
+        return registry.remove(task);
     }
 
     @Override
-    public void remove(Predicate<MoeTask> check) {
-        registry.removeIf(check);
+    public boolean remove(Predicate<MoeTask> check) {
+        return registry.removeIf(check);
     }
 
     @Override
