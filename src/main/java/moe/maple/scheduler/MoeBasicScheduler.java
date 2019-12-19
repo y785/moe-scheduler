@@ -22,6 +22,7 @@
 
 package moe.maple.scheduler;
 
+import moe.maple.scheduler.tasks.MoeFutureTask;
 import moe.maple.scheduler.tasks.MoeTask;
 
 import java.util.Objects;
@@ -81,18 +82,21 @@ public final class MoeBasicScheduler implements MoeScheduler {
     @Override
     public void register(MoeTask task) {
         Objects.requireNonNull(task);
+        if(task instanceof MoeFutureTask) {
+            ((MoeFutureTask) task).registerScheduler(this);
+        }
         registry.add(task);
     }
 
     @Override
-    public void unregister(MoeTask task) {
+    public boolean unregister(MoeTask task) {
         Objects.requireNonNull(task);
-        registry.remove(task);
+        return registry.remove(task);
     }
 
     @Override
-    public void remove(Predicate<MoeTask> check) {
-        registry.removeIf(check);
+    public boolean remove(Predicate<MoeTask> check) {
+        return registry.removeIf(check);
     }
 
     @Override

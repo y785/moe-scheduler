@@ -22,14 +22,17 @@
 
 package moe.maple.scheduler.tasks.delay;
 
+import moe.maple.scheduler.MoeScheduler;
+import moe.maple.scheduler.tasks.MoeFutureTask;
 import moe.maple.scheduler.tasks.MoeHardTask;
-import moe.maple.scheduler.tasks.MoeTask;
 
-public class MoeRepeatingDelayedTask implements MoeTask {
+public class MoeRepeatingDelayedTask implements MoeFutureTask {
 
     private final MoeHardTask actual;
     private final long delay;
     private long start;
+
+    private MoeScheduler scheduler;
 
     public MoeRepeatingDelayedTask(MoeHardTask actual, long delay, long start) {
         if (actual == null)
@@ -41,6 +44,19 @@ public class MoeRepeatingDelayedTask implements MoeTask {
 
     public MoeRepeatingDelayedTask(MoeHardTask actual, long delay) {
         this(actual, delay, System.currentTimeMillis());
+    }
+
+    @Override
+    public void registerScheduler(MoeScheduler scheduler) {
+        this.scheduler = scheduler;
+    }
+
+    @Override
+    public boolean cancel() {
+        if(scheduler != null) {
+            return scheduler.unregister(this);
+        }
+        return false;
     }
 
     @Override
