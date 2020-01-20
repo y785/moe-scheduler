@@ -27,6 +27,9 @@ import moe.maple.scheduler.tasks.MoeTask;
 import moe.maple.scheduler.tasks.delay.MoeDelayedTask;
 import moe.maple.scheduler.tasks.tick.MoeTickTask;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -35,30 +38,79 @@ public interface MoeScheduler {
 
     MoeTelescope telescope();
 
+    boolean isSchedulerThread(Thread thread);
+
+    Executor asExecutor();
+
+    ExecutorService asExecutorService();
+
+    ScheduledExecutorService asScheduledExecutorService();
+
+    default boolean isSchedulerThread() {
+        return isSchedulerThread(Thread.currentThread());
+    }
+
+    boolean isStopped();
+
+    /**
+     * Synchronously wait for the supplier result.
+     * If the thread that calls this is on the main loop thread, supplier
+     * is called instantly. This as a thread-safe supplier method.
+     */
+    <T> T await(Supplier<T> supplier);
+
+    /**
+     * See {@link #await(Supplier)} for the alternative approach.
+     * Submit the supplier to the asynchronous pool.
+     * If the thread that calls this is on the main loop thread, supplier
+     * is called instantly.
+     */
+    <T> T awaitAsync(Supplier<T> supplier);
+
     default <T> void future(Supplier<T> sup, Consumer<T> cons) {
-        registerAsync(new MoeDelayedTask((d1) -> {
+        registerAsync(((d1) -> {
             var a = sup.get();
-            registerDelayed(d2 -> cons.accept(a), 0);
-        }, 0L));
+            register(d2 -> cons.accept(a));
+        }));
     }
 
     default void registerAsync(MoeTask original) {
         register(new MoeAsyncTask(original));
     }
 
+    default void registerAsync(Runnable runnable) {
+        registerAsync((delta) -> runnable.run());
+    }
+
     default void registerDelayed(MoeTask original, long delay, long start) {
         register(new MoeDelayedTask(original, delay, start));
+    }
+
+    default void registerDelayed(Runnable runnable, long delay, long start) {
+        registerDelayed((delta) -> runnable.run(), delay, start);
     }
 
     default void registerDelayed(MoeTask original, long delay) {
         registerDelayed(original, delay, System.currentTimeMillis());
     }
 
+    default void registerDelayed(Runnable runnable, long delay) {
+        registerDelayed((delta) -> runnable.run(), delay);
+    }
+
     default void registerTick(MoeTask original, long ticks) {
         register(new MoeTickTask(original, ticks));
     }
 
+    default void registerTick(Runnable runnable, long ticks) {
+        registerTick((delta) -> runnable.run(), ticks);
+    }
+
     void register(MoeTask task);
+
+    default void register(Runnable runnable) {
+        register((delta) -> runnable.run());
+    }
 
     void unregister(MoeTask task);
 

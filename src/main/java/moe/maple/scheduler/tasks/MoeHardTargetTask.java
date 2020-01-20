@@ -22,6 +22,10 @@
 
 package moe.maple.scheduler.tasks;
 
+/**
+ * See {@link MoeHardTask} for more information.
+ */
+@FunctionalInterface
 public interface MoeHardTargetTask<T> extends MoeTargetTask<T> {
 
     @Override

@@ -22,6 +22,10 @@
 
 package moe.maple.scheduler.tasks;
 
+/**
+ * A {@code hard} task is a task that never ends. Useful for service updates, etc.
+ */
+@FunctionalInterface
 public interface MoeHardTask extends MoeTask {
 
     @Override

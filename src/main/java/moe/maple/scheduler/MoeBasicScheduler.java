@@ -24,15 +24,16 @@ package moe.maple.scheduler;
 
 import moe.maple.scheduler.tasks.MoeTask;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 public final class MoeBasicScheduler implements MoeScheduler {
-
-
 
     private final String name;
     private final int delay, period;
@@ -76,7 +77,34 @@ public final class MoeBasicScheduler implements MoeScheduler {
     }
 
     @Override
-    public MoeTelescope telescope() { return telescope; }
+    public Executor asExecutor() {
+        return executor;
+    }
+
+    @Override
+    public ExecutorService asExecutorService() {
+        return executor;
+    }
+
+    @Override
+    public ScheduledExecutorService asScheduledExecutorService() {
+        return executor;
+    }
+
+    @Override
+    public boolean isSchedulerThread(Thread thread) {
+        return thread.getName().startsWith(name);
+    }
+
+    @Override
+    public boolean isStopped() {
+        return updateLoop == null || (updateLoop.isCancelled() || updateLoop.isDone());
+    }
+
+    @Override
+    public MoeTelescope telescope() {
+        return telescope;
+    }
 
     @Override
     public void register(MoeTask task) {
@@ -93,6 +121,18 @@ public final class MoeBasicScheduler implements MoeScheduler {
     @Override
     public void remove(Predicate<MoeTask> check) {
         registry.removeIf(check);
+    }
+
+    @Override
+    public <T> T await(Supplier<T> supplier) {
+        if (isSchedulerThread()) return supplier.get();
+        else return CompletableFuture.supplyAsync(supplier, executor).getNow(null);
+    }
+
+    @Override
+    public <T> T awaitAsync(Supplier<T> supplier) {
+        if (isSchedulerThread()) return supplier.get();
+        return CompletableFuture.supplyAsync(supplier, asyncExecutor).getNow(null);
     }
 
     @Override
