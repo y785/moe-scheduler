@@ -37,10 +37,9 @@ public class LazyImgTask implements MoeTask {
 
     @Override
     public void update(long delta) {
-        if (delta - img.getLastAccess() >= delay) {
-            this.img.children((MoeProperty[])null);
-            this.img.loaded(false);
-            this.done = true;
+        if (delta - img.getLastAccess() >= delay && !done) {
+            this.img.clear();
+            this.done = true; // Done is set, task is removed on next update loop.
         }
     }
 }
