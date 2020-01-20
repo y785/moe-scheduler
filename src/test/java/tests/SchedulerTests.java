@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019, y785, http://github.com/y785
+ * Copyright (C) 2020, y785, http://github.com/y785
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,37 +20,42 @@
  * SOFTWARE.
  */
 
-package moe.maple.scheduler;
+package tests;
 
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
+import moe.maple.scheduler.MoeBasicScheduler;
+import moe.maple.scheduler.MoeScheduler;
+import moe.maple.scheduler.tasks.delay.MoeRepeatingDelayedTask;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.openjdk.jmh.annotations.Setup;
 
-public class MoeBasicThreadFactory implements ThreadFactory {
+import java.util.concurrent.Phaser;
+import java.util.concurrent.locks.ReentrantLock;
 
-    private final String name;
-    private AtomicInteger counter;
+public class SchedulerTests {
 
-    private Thread latest;
+    private static MoeScheduler scheduler;
 
-    public MoeBasicThreadFactory(String name) {
-        if (name == null || name.isEmpty())
-            throw new IllegalArgumentException("Invalid name: "+name);
-        this.name = name.concat("-");
-        this.counter = new AtomicInteger();
+    @Setup
+    @BeforeAll
+    public static void setup() {
+        scheduler = new MoeBasicScheduler();
+        scheduler.start();
     }
 
-    public MoeBasicThreadFactory() {
-        this("moe");
+    @Test
+    public void testDeadlock() {
+        final var phaser = new Phaser();
+        phaser.register();
+
+        final var lock = new ReentrantLock();
+        lock.lock();
+        scheduler.register(new MoeRepeatingDelayedTask((d) -> {
+            phaser.arriveAndAwaitAdvance();
+            lock.lock();
+        }, 1_000));
+        phaser.awaitAdvance(0);
+        phaser.awaitAdvance(1);
     }
 
-    public Thread getLatest() {
-        return latest;
-    }
-
-    @Override
-    public Thread newThread(Runnable r) {
-        var ret = new Thread(r, name.concat(String.valueOf(counter.incrementAndGet())));
-        latest = ret;
-        return ret;
-    }
 }

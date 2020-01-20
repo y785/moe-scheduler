@@ -22,30 +22,34 @@
 
 package moe.maple.scheduler;
 
+import moe.maple.scheduler.tasks.MoeAsyncTask;
 import moe.maple.scheduler.tasks.MoeTask;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public final class MoeBasicScheduler implements MoeScheduler {
+    
+    private static final Logger log = LogManager.getLogger( MoeBasicScheduler.class );
 
     private final String name;
     private final int delay, period;
 
-    private final ThreadFactory factory;
-    private final ScheduledExecutorService executor;
-    private final ThreadPoolExecutor asyncExecutor;
+    private final MoeBasicThreadFactory factory;
+    private ScheduledExecutorService executor;
+    private final ScheduledExecutorService asyncExecutor;
 
     private final MoeRollingTelescope telescope;
     private final Set<MoeTask> registry;
 
     private ScheduledFuture<?> updateLoop;
+    private Thread updateThread;
+    private long lastUpdate;
 
     private Consumer<Exception> exceptionConsumer;
 
@@ -57,12 +61,7 @@ public final class MoeBasicScheduler implements MoeScheduler {
 
         this.factory = new MoeBasicThreadFactory(name);
         this.executor = Executors.newSingleThreadScheduledExecutor(factory);
-        this.asyncExecutor = new ThreadPoolExecutor(0,
-                MoeScheduler.THREADS,
-                20L,
-                TimeUnit.SECONDS,
-                new LinkedBlockingDeque<>(),
-                factory);
+        this.asyncExecutor = new ScheduledThreadPoolExecutor(MoeScheduler.THREADS, factory);
 
         this.telescope = new MoeRollingTelescope(period);
         this.registry = ConcurrentHashMap.newKeySet();
@@ -139,8 +138,10 @@ public final class MoeBasicScheduler implements MoeScheduler {
     public void start() {
         if (updateLoop != null)
             throw new IllegalStateException("Scheduler has already started.");
+        lastUpdate = System.currentTimeMillis();
         updateLoop = executor.scheduleAtFixedRate(() -> {
             final var delta = System.currentTimeMillis();
+
             final var iter = registry.iterator();
             while (iter.hasNext()) {
                 final var task = iter.next();
@@ -158,8 +159,12 @@ public final class MoeBasicScheduler implements MoeScheduler {
 
                 if (task.isEventDone()) iter.remove();
             }
+            lastUpdate = delta;
             telescope.update(delta);
         }, delay, period, TimeUnit.MILLISECONDS);
+        updateThread = factory.getLatest(); // Todo: probably need to verify this as accurate
+
+        asyncExecutor.scheduleAtFixedRate(new Nurse(), 10_000, 5_000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -182,5 +187,24 @@ public final class MoeBasicScheduler implements MoeScheduler {
                 .append("\r\n")
                 .append(prefix).append(" Telescope: ").append(telescope);
         return sb.toString();
+    }
+
+    private final class Nurse implements Runnable {
+
+        @Override
+        public void run() {
+            if (System.currentTimeMillis() - lastUpdate >= 5_000) {
+                var stack = updateThread.getStackTrace(); // Arrays.toString is ugly :(
+                var sb = new StringBuilder();
+                for (var s : stack) sb.append(s.toString()).append("\r\n");
+                log.error("Update loop is broke, last update was over 5 seconds ago! StackTrace of presumed loop thread: {}", sb);
+                // Loop thread needs to be reset. :(
+
+                executor.shutdownNow();
+                executor = Executors.newSingleThreadScheduledExecutor(factory);
+                updateLoop = null;
+                start();
+            }
+        }
     }
 }
