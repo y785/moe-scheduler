@@ -140,27 +140,10 @@ public final class MoeBasicScheduler implements MoeScheduler {
             throw new IllegalStateException("Scheduler has already started.");
         lastUpdate = System.currentTimeMillis();
         updateLoop = executor.scheduleAtFixedRate(() -> {
-            final var delta = System.currentTimeMillis();
-
-            final var iter = registry.iterator();
-            while (iter.hasNext()) {
-                final var task = iter.next();
-                if (task.isEventAsync()) {
-                    asyncExecutor.submit(() -> {
-                        try {
-                            task.update(delta);
-                        } catch (Exception e) { exceptionConsumer.accept(e); }
-                    });
-                } else {
-                    try {
-                        task.update(delta);
-                    } catch (Exception e) { exceptionConsumer.accept(e); }
-                }
-
-                if (task.isEventDone()) iter.remove();
-            }
-            lastUpdate = delta;
-            telescope.update(delta);
+            final var currentTime = System.currentTimeMillis();
+            update(currentTime);
+            lastUpdate = currentTime;
+            telescope.update(currentTime);
         }, delay, period, TimeUnit.MILLISECONDS);
         updateThread = factory.getLatest(); // Todo: probably need to verify this as accurate
 
@@ -187,6 +170,30 @@ public final class MoeBasicScheduler implements MoeScheduler {
                 .append("\r\n")
                 .append(prefix).append(" Telescope: ").append(telescope);
         return sb.toString();
+    }
+
+    protected void update(MoeTask task, long currentTime) {
+        if (task.isEventAsync()) {
+            asyncExecutor.submit(() -> {
+                try {
+                    task.update(currentTime);
+                } catch (Exception e) { exceptionConsumer.accept(e); }
+            });
+        } else {
+            try {
+                task.update(currentTime);
+            } catch (Exception e) { exceptionConsumer.accept(e); }
+        }
+    }
+
+    protected void update(long currentTime) {
+        final var iter = registry.iterator();
+        while (iter.hasNext()) {
+            final var task = iter.next();
+            update(task, currentTime);
+            if (task.isEventDone())
+                iter.remove();
+        }
     }
 
     private final class Nurse implements Runnable {
