@@ -27,8 +27,15 @@ public class MoeAsyncTask implements MoeTask {
     private final MoeTask actual;
     private volatile boolean running;
 
+    private final MoeTask onDone;
+
     public MoeAsyncTask(MoeTask actual) {
+        this(actual, (d) -> { });
+    }
+
+    public MoeAsyncTask(MoeTask actual, MoeTask onDone) {
         this.actual = actual;
+        this.onDone = onDone;
     }
 
     @Override
@@ -46,6 +53,8 @@ public class MoeAsyncTask implements MoeTask {
         if (!running) {
             running = true;
             actual.update(delta);
+            if (actual.isEventDone())
+                onDone.update(delta);
             running = false;
         }
     }

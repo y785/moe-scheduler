@@ -24,12 +24,15 @@ package tests;
 
 import moe.maple.scheduler.MoeBasicScheduler;
 import moe.maple.scheduler.MoeScheduler;
+import moe.maple.scheduler.tasks.MoeTask;
 import moe.maple.scheduler.tasks.delay.MoeRepeatingDelayedTask;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.openjdk.jmh.annotations.Setup;
 
+import java.util.ArrayList;
 import java.util.concurrent.Phaser;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class SchedulerTests {
@@ -50,12 +53,29 @@ public class SchedulerTests {
 
         final var lock = new ReentrantLock();
         lock.lock();
-        scheduler.register(new MoeRepeatingDelayedTask((d) -> {
-            phaser.arriveAndAwaitAdvance();
+        scheduler.register((d) -> {
+            System.out.println("Lock: " + lock.isLocked());
             lock.lock();
-        }, 1_000));
+        });
         phaser.awaitAdvance(0);
         phaser.awaitAdvance(1);
+    }
+
+    @Test
+    public void testAsyncGroups() {
+//        final var testCount = 20;
+//        var tasks = new ArrayList<MoeTask>();
+//        var atomic = new AtomicInteger();
+//        for (int i = 0; i < testCount; i++)
+//            tasks.add((d) -> {
+//                try {
+//                    Thread.sleep(atomic.incrementAndGet() * 1000);
+//                    atomic.decrementAndGet();
+//                } catch (Exception e) { e.printStackTrace(); }
+//            });
+//
+//        scheduler.awaitAsync(tasks, Throwable::printStackTrace);
+//        assert atomic.get() == 0;
     }
 
 }

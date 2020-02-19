@@ -26,7 +26,7 @@ package moe.maple.scheduler;
  * A pojo to count the time/various stats of the event loop.
  * To make sure we're not dying slowly. :^(
  */
-public interface MoeTelescope {
+public interface SchedulerStats {
 
     int max();
 

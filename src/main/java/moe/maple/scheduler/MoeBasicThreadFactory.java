@@ -30,8 +30,6 @@ public class MoeBasicThreadFactory implements ThreadFactory {
     private final String name;
     private AtomicInteger counter;
 
-    private Thread latest;
-
     public MoeBasicThreadFactory(String name) {
         if (name == null || name.isEmpty())
             throw new IllegalArgumentException("Invalid name: "+name);
@@ -43,14 +41,8 @@ public class MoeBasicThreadFactory implements ThreadFactory {
         this("moe");
     }
 
-    public Thread getLatest() {
-        return latest;
-    }
-
     @Override
     public Thread newThread(Runnable r) {
-        var ret = new Thread(r, name.concat(String.valueOf(counter.incrementAndGet())));
-        latest = ret;
-        return ret;
+        return new Thread(r, name.concat(String.valueOf(counter.incrementAndGet())));
     }
 }

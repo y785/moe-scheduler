@@ -24,7 +24,7 @@ package moe.maple.scheduler;
 
 import moe.maple.scheduler.tasks.MoeTask;
 
-public class MoeRollingTelescope implements MoeTask, MoeTelescope {
+public class MoeRollingStats implements MoeTask, SchedulerStats {
 
     private long last;
     private int period;
@@ -34,13 +34,13 @@ public class MoeRollingTelescope implements MoeTask, MoeTelescope {
 
     private int sum;
 
-    public MoeRollingTelescope(int period, int count) {
+    public MoeRollingStats(int period, int count) {
         this.period = period;
         this.last = System.currentTimeMillis();
         this.times = new int[count];
     }
 
-    public MoeRollingTelescope(int period) {
+    public MoeRollingStats(int period) {
         this(period, 100);
     }
 

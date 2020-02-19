@@ -27,16 +27,15 @@ import moe.maple.scheduler.tasks.MoeTask;
 import moe.maple.scheduler.tasks.delay.MoeDelayedTask;
 import moe.maple.scheduler.tasks.tick.MoeTickTask;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.Collection;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public interface MoeScheduler {
 
-    MoeTelescope telescope();
+    SchedulerStats telescope();
 
     boolean isSchedulerThread(Thread thread);
 
@@ -67,6 +66,28 @@ public interface MoeScheduler {
      */
     <T> T awaitAsync(Supplier<T> supplier);
 
+    default void awaitAsync(Collection<MoeTask> tasks, Consumer<InterruptedException> exceptionConsumer) {
+        try {
+            awaitAsync(tasks);
+        } catch (InterruptedException e) {
+            exceptionConsumer.accept(e);
+        }
+    }
+
+    /**
+     * Sometimes I have a group of tasks that I want to run asynchronously.
+     * Sometimes I even want to wait for them to all finish before going forward.
+     * This is my solution to the problem of knowing when all tasks are finished.
+     * @param tasks                 - The tasks to submit and wait on finishing.
+     * @throws InterruptedException - If the latch breaks for whatever reason.
+     */
+    default void awaitAsync(Collection<MoeTask> tasks) throws InterruptedException {
+        final var finishLine = tasks.size();
+        final var latch = new CountDownLatch(finishLine);
+        tasks.forEach(t -> registerAsync(t, (d) -> latch.countDown()));
+        latch.await();
+    }
+
     default <T> void future(Supplier<T> sup, Consumer<T> cons) {
         registerAsync(((d1) -> {
             var a = sup.get();
@@ -76,6 +97,10 @@ public interface MoeScheduler {
 
     default void registerAsync(MoeTask original) {
         register(new MoeAsyncTask(original));
+    }
+
+    default void registerAsync(MoeTask original, MoeTask onDone) {
+        register(new MoeAsyncTask(original, onDone));
     }
 
     default void registerAsync(Runnable runnable) {
