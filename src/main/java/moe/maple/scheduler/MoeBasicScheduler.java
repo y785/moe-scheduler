@@ -22,6 +22,7 @@
 
 package moe.maple.scheduler;
 
+import moe.maple.scheduler.tasks.MoeAsyncTask;
 import moe.maple.scheduler.tasks.MoeTask;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,7 +44,7 @@ public final class MoeBasicScheduler implements MoeScheduler {
     private ScheduledExecutorService executor;
     private final ScheduledExecutorService asyncExecutor;
 
-    private final MoeRollingStats telescope;
+    private final MoeRollingTelescope telescope;
     private final Set<MoeTask> registry;
 
     private ScheduledFuture<?> updateLoop;
@@ -62,7 +63,7 @@ public final class MoeBasicScheduler implements MoeScheduler {
         this.executor = Executors.newSingleThreadScheduledExecutor(factory);
         this.asyncExecutor = new ScheduledThreadPoolExecutor(MoeScheduler.THREADS, factory);
 
-        this.telescope = new MoeRollingStats(period);
+        this.telescope = new MoeRollingTelescope(period);
         this.registry = ConcurrentHashMap.newKeySet();
     }
 
@@ -160,8 +161,13 @@ public final class MoeBasicScheduler implements MoeScheduler {
             }
             lastUpdate = currentTime;
             telescope.update(currentTime);
+            final var currentTime = System.currentTimeMillis();
+            update(currentTime);
+            lastUpdate = currentTime;
+            telescope.update(currentTime);
         }, delay, period, TimeUnit.MILLISECONDS);
-        register(() -> this.updateThread = Thread.currentThread());
+        updateThread = factory.getLatest(); // Todo: probably need to verify this as accurate
+
         asyncExecutor.scheduleAtFixedRate(new Nurse(), 10_000, 5_000, TimeUnit.MILLISECONDS);
     }
 
@@ -187,17 +193,38 @@ public final class MoeBasicScheduler implements MoeScheduler {
         return sb.toString();
     }
 
+    protected void update(MoeTask task, long currentTime) {
+        if (task.isEventAsync()) {
+            asyncExecutor.submit(() -> {
+                try {
+                    task.update(currentTime);
+                } catch (Exception e) { exceptionConsumer.accept(e); }
+            });
+        } else {
+            try {
+                task.update(currentTime);
+            } catch (Exception e) { exceptionConsumer.accept(e); }
+        }
+    }
+
+    protected void update(long currentTime) {
+        final var iter = registry.iterator();
+        while (iter.hasNext()) {
+            final var task = iter.next();
+            update(task, currentTime);
+            if (task.isEventDone())
+                iter.remove();
+        }
+    }
+
     private final class Nurse implements Runnable {
+
         @Override
         public void run() {
-            System.out.println("NURSE: "+(System.currentTimeMillis() - lastUpdate));
             if (System.currentTimeMillis() - lastUpdate >= 5_000) {
-                System.out.println("Okay, time to restart it :monkaS:");
-                var stack = updateThread.getStackTrace();
+                var stack = updateThread.getStackTrace(); // Arrays.toString is ugly :(
                 var sb = new StringBuilder();
-                for (var s : stack)
-                    sb.append(s.toString()).append("\r\n");
-                System.out.println(sb.toString());
+                for (var s : stack) sb.append(s.toString()).append("\r\n");
                 log.error("Update loop is broke, last update was over 5 seconds ago! StackTrace of presumed loop thread: {}", sb);
                 // Loop thread needs to be reset. :(
 
