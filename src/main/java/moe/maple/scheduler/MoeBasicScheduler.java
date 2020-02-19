@@ -22,10 +22,7 @@
 
 package moe.maple.scheduler;
 
-import moe.maple.scheduler.tasks.MoeAsyncTask;
 import moe.maple.scheduler.tasks.MoeTask;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -34,8 +31,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public final class MoeBasicScheduler implements MoeScheduler {
-    
-    private static final Logger log = LogManager.getLogger( MoeBasicScheduler.class );
 
     private final String name;
     private final int delay, period;

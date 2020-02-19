@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019, y785, http://github.com/y785
+ * Copyright (C) 2020, y785, http://github.com/y785
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,43 +20,34 @@
  * SOFTWARE.
  */
 
-package moe.maple.scheduler.tasks.delay;
+package moe.maple.scheduler.tasks.repeat;
 
 import moe.maple.scheduler.tasks.MoeTask;
 
-public class MoeRepeatingDelayedTask implements MoeTask {
+public class MoeRepeatingTickTask extends MoeRepeatingTask implements MoeTask {
 
-    private final MoeTask actual;
-    private final long delay;
-    private long start;
+    private final long tickCount;
+    private long iteration;
+    private boolean ran;
 
-    public MoeRepeatingDelayedTask(MoeTask actual, long delay, long start) {
-        if (actual == null)
-            throw new IllegalArgumentException("Delayed task is set to null.");
-        this.actual = actual;
-        this.delay = delay;
-        this.start = start;
-    }
-
-    public MoeRepeatingDelayedTask(MoeTask actual, long delay) {
-        this(actual, delay, System.currentTimeMillis());
-    }
-
-    @Override
-    public boolean isEventAsync() {
-        return actual.isEventAsync();
+    public MoeRepeatingTickTask(MoeTask actual, boolean always, long tickCount) {
+        super(actual, always);
+        this.tickCount = tickCount;
     }
 
     @Override
     public boolean isEventDone() {
-        return actual.isEventDone();
+        return ran && super.isEventDone();
     }
 
     @Override
-    public void update(long delta) {
-        if (delta - start >= delay) {
-            start = delta;
-            actual.update(delta);
+    public void update(long currentTime) {
+        iteration++;
+
+        if (iteration >= tickCount) {
+            super.update(currentTime);
+            ran = true;
+            iteration = 0;
         }
     }
 }

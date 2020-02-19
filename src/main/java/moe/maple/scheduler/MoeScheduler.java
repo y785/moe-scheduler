@@ -25,6 +25,9 @@ package moe.maple.scheduler;
 import moe.maple.scheduler.tasks.MoeAsyncTask;
 import moe.maple.scheduler.tasks.MoeTask;
 import moe.maple.scheduler.tasks.delay.MoeDelayedTask;
+import moe.maple.scheduler.tasks.repeat.MoeRepeatingDelayedTask;
+import moe.maple.scheduler.tasks.repeat.MoeRepeatingTask;
+import moe.maple.scheduler.tasks.repeat.MoeRepeatingTickTask;
 import moe.maple.scheduler.tasks.tick.MoeTickTask;
 
 import java.util.Collection;
@@ -121,6 +124,22 @@ public interface MoeScheduler {
 
     default void registerDelayed(Runnable runnable, long delay) {
         registerDelayed((delta) -> runnable.run(), delay);
+    }
+
+    default void registerRepeating(MoeTask original, boolean always) {
+        register(new MoeRepeatingTask(original, always));
+    }
+
+    default void registerRepeatingDelay(MoeTask original, boolean always, long delay) {
+        registerRepeatingDelay(original, always, delay, System.currentTimeMillis());
+    }
+
+    default void registerRepeatingDelay(MoeTask original, boolean always, long delay, long start) {
+        register(new MoeRepeatingDelayedTask(original, always, delay, start));
+    }
+
+    default void registerRepeatingTick(MoeTask original, boolean always, long delay) {
+        register(new MoeRepeatingTickTask(original, always, delay));
     }
 
     default void registerTick(MoeTask original, long ticks) {

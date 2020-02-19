@@ -70,9 +70,9 @@ public class MoeRollingStats implements MoeTask, SchedulerStats {
     }
 
     @Override
-    public void update(long delta) {
-        roll((int) Math.max(delta - last - period, 0));
-        last = delta;
+    public void update(long currentTime) {
+        roll((int) Math.max(currentTime - last - period, 0));
+        last = currentTime;
     }
 
     @Override

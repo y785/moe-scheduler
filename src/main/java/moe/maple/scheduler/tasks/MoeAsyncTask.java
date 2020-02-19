@@ -49,12 +49,12 @@ public class MoeAsyncTask implements MoeTask {
     }
 
     @Override
-    public void update(long delta) {
+    public void update(long currentTime) {
         if (!running) {
             running = true;
-            actual.update(delta);
+            actual.update(currentTime);
             if (actual.isEventDone())
-                onDone.update(delta);
+                onDone.update(currentTime);
             running = false;
         }
     }

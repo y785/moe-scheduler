@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019, y785, http://github.com/y785
+ * Copyright (C) 2020, y785, http://github.com/y785
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,26 +20,32 @@
  * SOFTWARE.
  */
 
-package moe.maple.scheduler.tasks;
+package moe.maple.scheduler.tasks.repeat;
 
-@FunctionalInterface
-public interface MoeTask {
+import moe.maple.scheduler.tasks.MoeTask;
 
-    default boolean isEventAsync() {
-        return false;
+public class MoeRepeatingTask implements MoeTask {
+
+    private final MoeTask actual;
+    private final boolean always;
+
+    public MoeRepeatingTask(MoeTask actual, boolean always) {
+        this.actual = actual;
+        this.always = always;
     }
 
-    default boolean isEventDone() {
-        return true;
+    @Override
+    public boolean isEventAsync() {
+        return actual.isEventAsync();
     }
 
-    /**
-     * This should not throw an exception.
-     * Please don't throw an exception from this. :^(
-     */
-    void update(long currentTime);
+    @Override
+    public boolean isEventDone() {
+        return !always && actual.isEventDone();
+    }
 
-    default void update() {
-        update(System.currentTimeMillis());
+    @Override
+    public void update(long currentTime) {
+        actual.update(currentTime);
     }
 }

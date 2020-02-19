@@ -54,9 +54,9 @@ public class MoeDelayedTask implements MoeTask {
     }
 
     @Override
-    public void update(long delta) {
-        if (!hasRun && delta - start >= delay) {
-            actual.update(delta);
+    public void update(long currentTime) {
+        if (!hasRun && currentTime - start >= delay) {
+            actual.update(currentTime);
             hasRun = true;
         }
     }

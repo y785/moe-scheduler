@@ -50,11 +50,11 @@ public class MoeTickTask implements MoeTask {
     }
 
     @Override
-    public void update(long delta) {
+    public void update(long currentTime) {
         iteration++;
 
         if (!hasRun && iteration >= tickCount) {
-            actual.update(delta);
+            actual.update(currentTime);
             iteration = 0;
             hasRun = true;
         }

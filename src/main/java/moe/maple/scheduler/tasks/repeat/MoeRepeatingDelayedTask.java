@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019, y785, http://github.com/y785
+ * Copyright (C) 2020, y785, http://github.com/y785
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,40 +20,34 @@
  * SOFTWARE.
  */
 
-package moe.maple.scheduler.tasks.tick;
+package moe.maple.scheduler.tasks.repeat;
 
 import moe.maple.scheduler.tasks.MoeTask;
 
-public class MoeRepeatingTickTask implements MoeTask {
+public class MoeRepeatingDelayedTask extends MoeRepeatingTask implements MoeTask {
 
-    private final MoeTask actual;
-    private final long tickCount;
-    private long iteration;
+    private final long delay;
+    private long start;
 
-    public MoeRepeatingTickTask(MoeTask actual, long tickCount) {
-        if (tickCount == 0)
-            throw new IllegalArgumentException("Tick Count is 0, please.");
-        this.actual = actual;
-        this.tickCount = tickCount;
-    }
+    private boolean ran;
 
-    @Override
-    public boolean isEventAsync() {
-        return actual.isEventAsync();
+    public MoeRepeatingDelayedTask(MoeTask actual, boolean always, long delay, long start) {
+        super(actual, always);
+        this.delay = delay;
+        this.start = start;
     }
 
     @Override
     public boolean isEventDone() {
-        return actual.isEventDone();
+        return ran && super.isEventDone();
     }
 
     @Override
-    public void update(long delta) {
-        iteration++;
-
-        if (iteration >= tickCount) {
-            actual.update(delta);
-            iteration = 0;
+    public void update(long currentTime) {
+        if (currentTime - start >= delay) {
+            super.update(currentTime);
+            start = currentTime;
+            ran = true;
         }
     }
 }

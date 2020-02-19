@@ -24,15 +24,11 @@ package tests;
 
 import moe.maple.scheduler.MoeBasicScheduler;
 import moe.maple.scheduler.MoeScheduler;
-import moe.maple.scheduler.tasks.MoeTask;
-import moe.maple.scheduler.tasks.delay.MoeRepeatingDelayedTask;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.openjdk.jmh.annotations.Setup;
 
-import java.util.ArrayList;
 import java.util.concurrent.Phaser;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class SchedulerTests {
