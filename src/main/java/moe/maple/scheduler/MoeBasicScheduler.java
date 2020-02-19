@@ -24,7 +24,8 @@ package moe.maple.scheduler;
 
 import moe.maple.scheduler.tasks.MoeTask;
 
-import java.util.*;
+import java.util.Objects;
+import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -40,7 +41,7 @@ public final class MoeBasicScheduler implements MoeScheduler {
     private final ScheduledExecutorService asyncExecutor;
 
     private final MoeRollingStats telescope;
-    private final Set<MoeTask> registry;
+    private final Queue<MoeTask> registry;
 
     private ScheduledFuture<?> updateLoop;
     private Thread updateThread;
@@ -59,7 +60,7 @@ public final class MoeBasicScheduler implements MoeScheduler {
         this.asyncExecutor = new ScheduledThreadPoolExecutor(MoeScheduler.THREADS, factory);
 
         this.telescope = new MoeRollingStats(period);
-        this.registry = ConcurrentHashMap.newKeySet();
+        this.registry = new ConcurrentLinkedQueue<>();
     }
 
     public MoeBasicScheduler(Consumer<Exception> exceptionConsumer, String name) {
@@ -141,7 +142,6 @@ public final class MoeBasicScheduler implements MoeScheduler {
             telescope.update(currentTime);
         }, delay, period, TimeUnit.MILLISECONDS);
         register(() -> updateThread = Thread.currentThread());
-
         asyncExecutor.scheduleAtFixedRate(new Nurse(), 10_000, 5_000, TimeUnit.MILLISECONDS);
     }
 
