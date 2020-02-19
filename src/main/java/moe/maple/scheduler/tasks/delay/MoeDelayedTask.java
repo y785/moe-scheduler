@@ -27,13 +27,15 @@ import moe.maple.scheduler.tasks.MoeTask;
 public class MoeDelayedTask implements MoeTask {
 
     private final MoeTask actual;
-    private final long start, delay;
+
+    private long start;
+    private final long delay;
 
     private boolean hasRun;
 
     public MoeDelayedTask(MoeTask actual, long delay, long start) {
         if (actual == null)
-            throw new IllegalArgumentException("Delayed task is set to null.");
+            throw new IllegalArgumentException("Actual task is set to null.");
         this.actual = actual;
         this.delay = delay;
         this.start = start;
@@ -50,13 +52,14 @@ public class MoeDelayedTask implements MoeTask {
 
     @Override
     public boolean isEventDone() {
-        return hasRun;
+        return hasRun && actual.isEventDone();
     }
 
     @Override
     public void update(long currentTime) {
         if (!hasRun && currentTime - start >= delay) {
             actual.update(currentTime);
+            start = System.currentTimeMillis();
             hasRun = true;
         }
     }

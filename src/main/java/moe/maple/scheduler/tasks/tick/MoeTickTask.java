@@ -33,6 +33,8 @@ public class MoeTickTask implements MoeTask {
     private boolean hasRun;
 
     public MoeTickTask(MoeTask actual, long tickCount) {
+        if (actual == null)
+            throw new IllegalArgumentException("Actual task is set to null.");
         if (tickCount == 0)
             throw new IllegalArgumentException("Tick Count is 0, please.");
         this.actual = actual;
@@ -46,7 +48,7 @@ public class MoeTickTask implements MoeTask {
 
     @Override
     public boolean isEventDone() {
-        return hasRun;
+        return hasRun && actual.isEventDone();
     }
 
     @Override

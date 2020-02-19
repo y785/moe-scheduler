@@ -30,6 +30,8 @@ public class MoeRepeatingTask implements MoeTask {
     private final boolean always;
 
     public MoeRepeatingTask(MoeTask actual, boolean always) {
+        if (actual == null)
+            throw new IllegalArgumentException("Actual task is set to null.");
         this.actual = actual;
         this.always = always;
     }

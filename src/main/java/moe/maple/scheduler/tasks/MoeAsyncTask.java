@@ -34,6 +34,8 @@ public class MoeAsyncTask implements MoeTask {
     }
 
     public MoeAsyncTask(MoeTask actual, MoeTask onDone) {
+        if (actual == null)
+            throw new IllegalArgumentException("Actual task is set to null.");
         this.actual = actual;
         this.onDone = onDone;
     }
