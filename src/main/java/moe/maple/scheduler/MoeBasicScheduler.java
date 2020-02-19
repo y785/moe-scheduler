@@ -44,7 +44,7 @@ public final class MoeBasicScheduler implements MoeScheduler {
     private ScheduledExecutorService executor;
     private final ScheduledExecutorService asyncExecutor;
 
-    private final MoeRollingTelescope telescope;
+    private final MoeRollingStats telescope;
     private final Set<MoeTask> registry;
 
     private ScheduledFuture<?> updateLoop;
@@ -63,7 +63,7 @@ public final class MoeBasicScheduler implements MoeScheduler {
         this.executor = Executors.newSingleThreadScheduledExecutor(factory);
         this.asyncExecutor = new ScheduledThreadPoolExecutor(MoeScheduler.THREADS, factory);
 
-        this.telescope = new MoeRollingTelescope(period);
+        this.telescope = new MoeRollingStats(period);
         this.registry = ConcurrentHashMap.newKeySet();
     }
 
@@ -101,7 +101,7 @@ public final class MoeBasicScheduler implements MoeScheduler {
     }
 
     @Override
-    public SchedulerStats telescope() {
+    public SchedulerStats stats() {
         return telescope;
     }
 
@@ -141,32 +141,11 @@ public final class MoeBasicScheduler implements MoeScheduler {
         lastUpdate = System.currentTimeMillis();
         updateLoop = executor.scheduleAtFixedRate(() -> {
             final var currentTime = System.currentTimeMillis();
-
-            final var iter = registry.iterator();
-            while (iter.hasNext()) {
-                final var task = iter.next();
-                if (task.isEventAsync()) {
-                    asyncExecutor.submit(() -> {
-                        try {
-                            task.update(currentTime);
-                        } catch (Exception e) { exceptionConsumer.accept(e); }
-                    });
-                } else {
-                    try {
-                        task.update(currentTime);
-                    } catch (Exception e) { exceptionConsumer.accept(e); }
-                }
-
-                if (task.isEventDone()) iter.remove();
-            }
-            lastUpdate = currentTime;
-            telescope.update(currentTime);
-            final var currentTime = System.currentTimeMillis();
             update(currentTime);
             lastUpdate = currentTime;
             telescope.update(currentTime);
         }, delay, period, TimeUnit.MILLISECONDS);
-        updateThread = factory.getLatest(); // Todo: probably need to verify this as accurate
+        register(() -> updateThread = Thread.currentThread());
 
         asyncExecutor.scheduleAtFixedRate(new Nurse(), 10_000, 5_000, TimeUnit.MILLISECONDS);
     }
@@ -221,11 +200,12 @@ public final class MoeBasicScheduler implements MoeScheduler {
 
         @Override
         public void run() {
-            if (System.currentTimeMillis() - lastUpdate >= 5_000) {
+            if (System.currentTimeMillis() - lastUpdate >= 5_000 && updateThread != null) {
                 var stack = updateThread.getStackTrace(); // Arrays.toString is ugly :(
                 var sb = new StringBuilder();
                 for (var s : stack) sb.append(s.toString()).append("\r\n");
-                log.error("Update loop is broke, last update was over 5 seconds ago! StackTrace of presumed loop thread: {}", sb);
+
+                exceptionConsumer.accept(new SchedulerException("Update loop is broke, last update was over 5 seconds ago! StackTrace of presumed loop thread: "+sb.toString()));
                 // Loop thread needs to be reset. :(
 
                 executor.shutdownNow();

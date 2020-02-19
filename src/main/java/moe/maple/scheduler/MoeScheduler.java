@@ -35,7 +35,7 @@ import java.util.function.Supplier;
 
 public interface MoeScheduler {
 
-    SchedulerStats telescope();
+    SchedulerStats stats();
 
     boolean isSchedulerThread(Thread thread);
 
