@@ -128,10 +128,7 @@ public final class MoeBasicScheduler implements MoeScheduler {
         return CompletableFuture.supplyAsync(supplier, asyncExecutor).getNow(null);
     }
 
-    @Override
-    public void start() {
-        if (updateLoop != null)
-            throw new IllegalStateException("Scheduler has already started.");
+    private void createLoop() {
         lastUpdate = System.currentTimeMillis();
         updateLoop = executor.scheduleAtFixedRate(() -> {
             final var currentTime = System.currentTimeMillis();
@@ -140,7 +137,20 @@ public final class MoeBasicScheduler implements MoeScheduler {
             telescope.update(currentTime);
         }, delay, period, TimeUnit.MILLISECONDS);
         register(() -> updateThread = Thread.currentThread());
+    }
+
+    private void restartLoop() {
+        executor.shutdownNow();
+        executor = Executors.newSingleThreadScheduledExecutor(factory);
+        createLoop();
+    }
+
+    @Override
+    public void start() {
+        if (updateLoop != null)
+            throw new IllegalStateException("Scheduler has already started.");
         asyncExecutor.scheduleAtFixedRate(new DeadlockDetector(), 10_000, 5_000, TimeUnit.MILLISECONDS);
+        createLoop();
     }
 
     @Override
@@ -151,18 +161,6 @@ public final class MoeBasicScheduler implements MoeScheduler {
         executor.shutdown();
         asyncExecutor.shutdown();
         updateLoop = null;
-    }
-
-    @Override
-    public String toString() {
-        var prefix = String.format("[ %s-scheduler ]", name);
-        var sb = new StringBuilder()
-                .append(prefix).append(" Tasks: ").append(registry.size())
-                .append(", Executor: ").append(executor.isTerminated())
-                .append(", Async: ").append(asyncExecutor.isTerminated())
-                .append("\r\n")
-                .append(prefix).append(" Telescope: ").append(telescope);
-        return sb.toString();
     }
 
     protected void update(MoeTask task, long currentTime) {
@@ -190,6 +188,18 @@ public final class MoeBasicScheduler implements MoeScheduler {
         }
     }
 
+    @Override
+    public String toString() {
+        var prefix = String.format("[ %s-scheduler ]", name);
+        var sb = new StringBuilder()
+                .append(prefix).append(" Tasks: ").append(registry.size())
+                .append(", Executor: ").append(executor.isTerminated())
+                .append(", Async: ").append(asyncExecutor.isTerminated())
+                .append("\r\n")
+                .append(prefix).append(" Telescope: ").append(telescope);
+        return sb.toString();
+    }
+
     private final class DeadlockDetector implements Runnable {
         @Override
         public void run() {
@@ -199,16 +209,14 @@ public final class MoeBasicScheduler implements MoeScheduler {
                 var sb = new StringBuilder();
                 for (var s : stack) sb.append(s.toString()).append("\r\n");
 
-                exceptionConsumer.accept(new SchedulerException("REMOVING THE LAST TASK THAT RAN FROM THE QUEUE. Update loop is broke, last update was over 5 seconds ago! StackTrace of presumed loop thread: "+sb.toString()));
+                exceptionConsumer.accept(new SchedulerException("REMOVING THE LAST TASK THAT RAN FROM THE QUEUE. Update loop is broke, last update was over 5 seconds ago! StackTrace of presumed loop thread:\r\n"+sb.toString()));
                 // Loop thread needs to be reset. :(
 
                 // Remove the last task that ran. We assume this task is the cause of the deadlock.
                 registry.removeIf((mt) -> mt.equals(lastTask));
 
-                executor.shutdownNow();
-                executor = Executors.newSingleThreadScheduledExecutor(factory);
-                updateLoop = null;
-                start();
+                // Restart the loop.
+                restartLoop();
             }
         }
     }

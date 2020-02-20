@@ -48,15 +48,21 @@ public class SchedulerTests {
     @Test
     public void testDeadlock() {
         final var phaser = new Phaser();
-        phaser.register();
-
         final var lock = new ReentrantLock();
+
+        phaser.register();
         lock.lock();
         scheduler.register((d) -> {
-            System.out.println("Lock: " + lock.isLocked());
+            phaser.arrive();
+            // This will deadlock the update loop, since lock is already locked.
             lock.lock();
         });
+        scheduler.register((d) -> {
+            phaser.arrive();
+        });
+
         phaser.awaitAdvance(0);
+        assert lock.isLocked();
         phaser.awaitAdvance(1);
     }
 
@@ -74,13 +80,13 @@ public class SchedulerTests {
 
     @Test
     public void testAsyncGroups() {
-        final var testCount = 20;
+        final var testCount = 5;
         var tasks = new ArrayList<MoeTask>();
         var atomic = new AtomicInteger();
         for (int i = 0; i < testCount; i++)
             tasks.add((d) -> {
                 try {
-                    Thread.sleep(atomic.incrementAndGet() * 1000);
+                    Thread.sleep(atomic.incrementAndGet() * 500);
                     atomic.decrementAndGet();
                 } catch (Exception e) { e.printStackTrace(); }
             });
