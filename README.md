@@ -10,11 +10,11 @@ By default, all tasks are removed based on the ``isEventDone()``, which returns 
 None.
 
 ### Maven
+[![CircleCI](https://circleci.com/gh/y785/moe-scheduler.svg?style=svg)](https://circleci.com/gh/y785/moe-scheduler)
 ```
 <dependency>
   <groupId>moe.maple</groupId>
   <artifactId>scheduler</artifactId>
   <version>2.1.0</version>
-  <type>pom</type>
 </dependency>
 ```
