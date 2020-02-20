@@ -1,5 +1,4 @@
 # Moe Scheduler
-[![CircleCI](https://circleci.com/gh/y785/moe-scheduler.svg?style=svg)](https://circleci.com/gh/y785/moe-scheduler)
 
 A simple tick-based event scheduler. Used for synchronizing game server events.
 Goal is to update actors with a time offset to determine proper event timings.
@@ -10,38 +9,12 @@ By default, all tasks are removed based on the ``isEventDone()``, which returns 
 ### Dependencies
 None.
 
-### Examples
-##### Simple: Dump a log every 10s
+### Maven
+[![CircleCI](https://circleci.com/gh/y785/moe-scheduler.svg?style=svg)](https://circleci.com/gh/y785/moe-scheduler)
 ```
-new MoeRepeatingDelayedTask((delta) -> log.debug("{}, PacketStats: {}", uptime, stats), 10000)
-```
-##### Advanced: Lazily unloading .img/.wz files
-```
-public class LazyImgTask implements MoeTask {
-
-    private final LazyImg img;
-    private final long delay;
-
-    private boolean done;
-
-    public LazyImgTask(LazyImg img, long delay) {
-        this.img = img;
-        this.delay = delay;
-        this.done = false;
-    }
-
-    @Override
-    public boolean isEventDone() { return done; }
-
-    @Override
-    public boolean isEventAsync() { return false; }
-
-    @Override
-    public void update(long delta) {
-        if (delta - img.getLastAccess() >= delay && !done) {
-            this.img.clear();
-            this.done = true; // Done is set, task is removed on next update loop.
-        }
-    }
-}
-```
+<dependency>
+  <groupId>moe.maple</groupId>
+  <artifactId>scheduler</artifactId>
+  <version>2.1.0</version>
+  <type>pom</type>
+</dependency>```
