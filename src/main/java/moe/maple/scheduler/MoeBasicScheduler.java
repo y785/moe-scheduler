@@ -68,6 +68,10 @@ public final class MoeBasicScheduler implements MoeScheduler {
         this(exceptionConsumer, name, 0, MoeScheduler.DEFAULT_PERIOD);
     }
 
+    public MoeBasicScheduler(Consumer<Exception> exceptionConsumer) {
+        this(exceptionConsumer, "moe", 0, MoeScheduler.DEFAULT_PERIOD);
+    }
+
     public MoeBasicScheduler() {
         this(Throwable::printStackTrace, "moe");
     }

@@ -22,7 +22,6 @@
 
 package tests;
 
-import moe.maple.scheduler.MoeBasicScheduler;
 import moe.maple.scheduler.MoeScheduler;
 import moe.maple.scheduler.tasks.MoeTask;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,7 +40,7 @@ public class SchedulerTests {
     @Setup
     @BeforeAll
     public static void setup() {
-        scheduler = new MoeBasicScheduler();
+        scheduler = MoeScheduler.newScheduler();
         scheduler.start();
     }
 
@@ -80,13 +79,13 @@ public class SchedulerTests {
 
     @Test
     public void testAsyncGroups() {
-        final var testCount = 5;
+        final var testCount = 10;
         var tasks = new ArrayList<MoeTask>();
         var atomic = new AtomicInteger();
         for (int i = 0; i < testCount; i++)
             tasks.add((d) -> {
                 try {
-                    Thread.sleep(atomic.incrementAndGet() * 500);
+                    Thread.sleep(atomic.incrementAndGet() * 100);
                     atomic.decrementAndGet();
                 } catch (Exception e) { e.printStackTrace(); }
             });

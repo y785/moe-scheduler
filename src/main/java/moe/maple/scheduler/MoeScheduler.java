@@ -211,4 +211,20 @@ public interface MoeScheduler {
      * Stops the scheduler. WILL CLEAR ALL TASKS REGISTERED.
      */
     void stop();
+
+    static MoeScheduler newScheduler() {
+        return new MoeBasicScheduler();
+    }
+
+    static MoeScheduler newScheduler(Consumer<Exception> exceptionConsumer) {
+        return new MoeBasicScheduler(exceptionConsumer);
+    }
+
+    static MoeScheduler newScheduler(Consumer<Exception> exceptionConsumer, String name) {
+        return new MoeBasicScheduler(exceptionConsumer, name);
+    }
+
+    static MoeScheduler newScheduler(Consumer<Exception> exceptionConsumer, String name, int delay, int period) {
+        return new MoeBasicScheduler(exceptionConsumer, name, delay, period);
+    }
 }
