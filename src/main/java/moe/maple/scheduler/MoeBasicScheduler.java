@@ -44,6 +44,8 @@ public final class MoeBasicScheduler implements MoeScheduler {
 
     private ScheduledFuture<?> updateLoop;
     private Thread updateThread;
+
+    private MoeTask lastTask;
     private long lastUpdate;
 
     private Consumer<Exception> exceptionConsumer;
@@ -138,7 +140,7 @@ public final class MoeBasicScheduler implements MoeScheduler {
             telescope.update(currentTime);
         }, delay, period, TimeUnit.MILLISECONDS);
         register(() -> updateThread = Thread.currentThread());
-        asyncExecutor.scheduleAtFixedRate(new Nurse(), 10_000, 5_000, TimeUnit.MILLISECONDS);
+        asyncExecutor.scheduleAtFixedRate(new DeadlockDetector(), 10_000, 5_000, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -172,6 +174,7 @@ public final class MoeBasicScheduler implements MoeScheduler {
             });
         } else {
             try {
+                this.lastTask = task;
                 task.update(currentTime);
             } catch (Exception e) { exceptionConsumer.accept(e); }
         }
@@ -187,17 +190,20 @@ public final class MoeBasicScheduler implements MoeScheduler {
         }
     }
 
-    private final class Nurse implements Runnable {
-
+    private final class DeadlockDetector implements Runnable {
         @Override
         public void run() {
-            if (System.currentTimeMillis() - lastUpdate >= 5_000 && updateThread != null) {
+            final var currentTime = System.currentTimeMillis();
+            if (currentTime - lastUpdate >= 5_000 && updateThread != null) {
                 var stack = updateThread.getStackTrace(); // Arrays.toString is ugly :(
                 var sb = new StringBuilder();
                 for (var s : stack) sb.append(s.toString()).append("\r\n");
 
-                exceptionConsumer.accept(new SchedulerException("Update loop is broke, last update was over 5 seconds ago! StackTrace of presumed loop thread: "+sb.toString()));
+                exceptionConsumer.accept(new SchedulerException("REMOVING THE LAST TASK THAT RAN FROM THE QUEUE. Update loop is broke, last update was over 5 seconds ago! StackTrace of presumed loop thread: "+sb.toString()));
                 // Loop thread needs to be reset. :(
+
+                // Remove the last task that ran. We assume this task is the cause of the deadlock.
+                registry.removeIf((mt) -> mt.equals(lastTask));
 
                 executor.shutdownNow();
                 executor = Executors.newSingleThreadScheduledExecutor(factory);
