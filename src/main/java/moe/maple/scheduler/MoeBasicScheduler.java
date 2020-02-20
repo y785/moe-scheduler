@@ -24,7 +24,6 @@ package moe.maple.scheduler;
 
 import moe.maple.scheduler.tasks.MoeTask;
 
-import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -88,7 +87,9 @@ public final class MoeBasicScheduler implements MoeScheduler {
 
     @Override
     public boolean isSchedulerThread(Thread thread) {
-        return thread.getName().startsWith(name);
+        if (thread == null)
+            throw new NullPointerException("Thread is null. :(");
+        return thread.equals(updateThread);
     }
 
     @Override
@@ -103,14 +104,9 @@ public final class MoeBasicScheduler implements MoeScheduler {
 
     @Override
     public void register(MoeTask task) {
-        Objects.requireNonNull(task);
+        if (task == null)
+            throw new NullPointerException("Cannot register a null task.");
         registry.add(task);
-    }
-
-    @Override
-    public void unregister(MoeTask task) {
-        Objects.requireNonNull(task);
-        registry.remove(task);
     }
 
     @Override

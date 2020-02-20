@@ -31,16 +31,30 @@ import moe.maple.scheduler.tasks.repeat.MoeRepeatingTickTask;
 import moe.maple.scheduler.tasks.tick.MoeTickTask;
 
 import java.util.Collection;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public interface MoeScheduler {
 
-    SchedulerStats stats();
+    int DEFAULT_PERIOD = 20;
+    int THREADS = Runtime.getRuntime().availableProcessors();
 
     boolean isSchedulerThread(Thread thread);
+
+    default boolean isSchedulerThread() {
+        return isSchedulerThread(Thread.currentThread());
+    }
+
+    default boolean isRunning() {
+        return !isStopped();
+    }
+
+    boolean isStopped();
 
     Executor asExecutor();
 
@@ -48,11 +62,11 @@ public interface MoeScheduler {
 
     ScheduledExecutorService asScheduledExecutorService();
 
-    default boolean isSchedulerThread() {
-        return isSchedulerThread(Thread.currentThread());
-    }
-
-    boolean isStopped();
+    /**
+     * see {@link SchedulerStats}
+     * @return The stats object attached to this scheduler.
+     */
+    SchedulerStats stats();
 
     /**
      * Synchronously wait for the supplier result.
@@ -156,14 +170,15 @@ public interface MoeScheduler {
         register((delta) -> runnable.run());
     }
 
-    void unregister(MoeTask task);
-
     void remove(Predicate<MoeTask> check);
 
+    /**
+     * Starts the scheduler. MUST BE CALLED FOR THE SCHEDULER TO RUN.
+     */
     void start();
 
+    /**
+     * Stops the scheduler. WILL CLEAR ALL TASKS REGISTERED.
+     */
     void stop();
-
-    int DEFAULT_PERIOD = 20;
-    int THREADS = Runtime.getRuntime().availableProcessors();
 }

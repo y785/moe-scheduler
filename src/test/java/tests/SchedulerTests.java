@@ -61,6 +61,18 @@ public class SchedulerTests {
     }
 
     @Test
+    public void testTick() {
+        final var phaser = new Phaser();
+        phaser.register();
+        scheduler.registerTick((ct) -> {
+            phaser.arrive();
+        }, 100);
+        assert(phaser.getPhase() == 0);
+        phaser.awaitAdvance(0);
+        assert(phaser.getPhase() == 1);
+    }
+
+    @Test
     public void testAsyncGroups() {
         final var testCount = 20;
         var tasks = new ArrayList<MoeTask>();
