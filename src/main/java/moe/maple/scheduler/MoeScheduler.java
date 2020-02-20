@@ -44,16 +44,33 @@ public interface MoeScheduler {
     int DEFAULT_PERIOD = 20;
     int THREADS = Runtime.getRuntime().availableProcessors();
 
+    /**
+     * See {@link #isSchedulerThread()}
+     * @param thread - The thread to check.
+     * @return       - TRUE IF THE CURRENT THREAD IS THE SAME AS THE UPDATE LOOP.
+     */
     boolean isSchedulerThread(Thread thread);
 
+    /**
+     * Used to determine if this current thread is the update loop thread.
+     * @return - TRUE IF THE CURRENT THREAD IS THE SAME AS THE UPDATE LOOP.
+     */
     default boolean isSchedulerThread() {
         return isSchedulerThread(Thread.currentThread());
     }
 
+    /**
+     * Used to check if the scheduler is currently active.
+     * @return - TRUE IF UPDATE LOOP IS RUNNING.
+     */
     default boolean isRunning() {
         return !isStopped();
     }
 
+    /**
+     * See {@link #isRunning()}
+     * @return - TRUE IF UPDATE LOOP IS NOT RUNNING.
+     */
     boolean isStopped();
 
     Executor asExecutor();
@@ -80,9 +97,15 @@ public interface MoeScheduler {
      * Submit the supplier to the asynchronous pool.
      * If the thread that calls this is on the main loop thread, supplier
      * is called instantly.
+     * @param supplier - The Object Supplier to be run asynchronously.
      */
     <T> T awaitAsync(Supplier<T> supplier);
 
+    /**
+     * See {@link #awaitAsync(Collection)}.
+     * @param tasks             - The tasks to submit
+     * @param exceptionConsumer - The exception consumer.
+     */
     default void awaitAsync(Collection<MoeTask> tasks, Consumer<InterruptedException> exceptionConsumer) {
         try {
             awaitAsync(tasks);
@@ -105,10 +128,17 @@ public interface MoeScheduler {
         latch.await();
     }
 
-    default <T> void future(Supplier<T> sup, Consumer<T> cons) {
+    /**
+     * This method will fetch an object <strong>asynchronously</strong> through the supplier,
+     * but consumer it <strong>synchronously</strong> on the update loop.
+     * @param supplier - The supplier to run asynchronously.
+     * @param consumer - The consumer of the supplier, to be run synchronously
+     *                 - on the update thread.
+     */
+    default <T> void future(Supplier<T> supplier, Consumer<T> consumer) {
         registerAsync(((d1) -> {
-            var a = sup.get();
-            register(d2 -> cons.accept(a));
+            var a = supplier.get();
+            register(d2 -> consumer.accept(a));
         }));
     }
 
