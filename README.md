@@ -1,4 +1,5 @@
 # Moe Scheduler
+[![CircleCI](https://circleci.com/gh/y785/moe-scheduler.svg?style=svg)](https://circleci.com/gh/y785/moe-scheduler)
 
 A simple tick-based event scheduler. Used for synchronizing game server events.
 Goal is to update actors with a time offset to determine proper event timings.
