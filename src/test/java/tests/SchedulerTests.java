@@ -103,12 +103,13 @@ public class SchedulerTests {
 
         final var atomic = new AtomicInteger();
 
-        scheduler.register(new MoeRetryTask(new MoeRepeatingTask((d) -> {
-            final var currentValue = atomic.incrementAndGet();
-            if (currentValue != 5)
-                throw new IllegalArgumentException("No: "+currentValue);
-            phaser.arrive();
-        }, true), 5));
+        scheduler.register(new MoeRetryTask(
+            new MoeRepeatingTask((d) -> {
+                final var currentValue = atomic.incrementAndGet();
+                if (currentValue != 5)
+                    throw new IllegalArgumentException("No: "+currentValue);
+                phaser.arrive();
+            }, () -> atomic.get() == 5), 5));
 
         phaser.awaitAdvance(0);
     }
