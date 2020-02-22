@@ -24,6 +24,8 @@ package tests;
 
 import moe.maple.scheduler.MoeScheduler;
 import moe.maple.scheduler.tasks.MoeTask;
+import moe.maple.scheduler.tasks.repeat.MoeRepeatingTask;
+import moe.maple.scheduler.tasks.retry.MoeRetryTask;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.openjdk.jmh.annotations.Setup;
@@ -92,6 +94,22 @@ public class SchedulerTests {
 
         scheduler.awaitAsync(tasks, Throwable::printStackTrace);
         assert atomic.get() == 0;
+    }
+
+    @Test
+    public void testRetry() {
+        final var phaser = new Phaser();
+        phaser.register();
+
+        final var atomic = new AtomicInteger();
+
+        scheduler.register(new MoeRetryTask(new MoeRepeatingTask((d) -> {
+            final var currentValue = atomic.incrementAndGet();
+            if (currentValue == 5) phaser.arrive();
+            else throw new IllegalArgumentException("No: "+currentValue);
+        }, true), 5));
+
+        phaser.awaitAdvance(0);
     }
 
 }
