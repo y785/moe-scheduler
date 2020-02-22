@@ -24,16 +24,29 @@ package moe.maple.scheduler.tasks.repeat;
 
 import moe.maple.scheduler.tasks.MoeTask;
 
+import java.util.function.BooleanSupplier;
+
 public class MoeRepeatingTask implements MoeTask {
 
     private final MoeTask actual;
-    private final boolean always;
+
+    private boolean always;
+    private BooleanSupplier isDoneSupplier;
 
     public MoeRepeatingTask(MoeTask actual, boolean always) {
+        this(actual);
+        this.always = always;
+    }
+
+    public MoeRepeatingTask(MoeTask actual, BooleanSupplier isDoneSupplier) {
+        this(actual);
+        this.isDoneSupplier = isDoneSupplier;
+    }
+
+    public  MoeRepeatingTask(MoeTask actual) {
         if (actual == null)
             throw new IllegalArgumentException("Actual task is set to null.");
         this.actual = actual;
-        this.always = always;
     }
 
     @Override
@@ -43,7 +56,9 @@ public class MoeRepeatingTask implements MoeTask {
 
     @Override
     public boolean isEventDone() {
-        return !always && actual.isEventDone();
+        return isDoneSupplier == null
+                ? (!always && actual.isEventDone())
+                : (isDoneSupplier.getAsBoolean());
     }
 
     @Override
