@@ -109,6 +109,11 @@ public final class MoeBasicScheduler implements MoeScheduler {
     }
 
     @Override
+    public int size() {
+        return registry.size();
+    }
+
+    @Override
     public void register(MoeTask task) {
         if (task == null)
             throw new NullPointerException("Cannot register a null task.");

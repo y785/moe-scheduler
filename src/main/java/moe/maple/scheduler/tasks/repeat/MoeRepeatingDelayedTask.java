@@ -24,6 +24,8 @@ package moe.maple.scheduler.tasks.repeat;
 
 import moe.maple.scheduler.tasks.MoeTask;
 
+import java.util.function.BooleanSupplier;
+
 public class MoeRepeatingDelayedTask extends MoeRepeatingTask implements MoeTask {
 
     private final long delay;
@@ -33,6 +35,12 @@ public class MoeRepeatingDelayedTask extends MoeRepeatingTask implements MoeTask
 
     public MoeRepeatingDelayedTask(MoeTask actual, boolean always, long delay, long start) {
         super(actual, always);
+        this.delay = delay;
+        this.start = start;
+    }
+
+    public MoeRepeatingDelayedTask(MoeTask actual, BooleanSupplier isDoneSupplier, long delay, long start) {
+        super(actual, isDoneSupplier);
         this.delay = delay;
         this.start = start;
     }

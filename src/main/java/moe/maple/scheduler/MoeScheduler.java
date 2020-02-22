@@ -35,6 +35,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -84,6 +85,12 @@ public interface MoeScheduler {
      * @return The stats object attached to this scheduler.
      */
     SchedulerStats stats();
+
+    /**
+     * Returns all tasks currently residing in the scheduler to be processed.
+     * @return - The size of the current task queue.
+     */
+    int size();
 
     /**
      * Synchronously wait for the supplier result.
@@ -174,16 +181,32 @@ public interface MoeScheduler {
         register(new MoeRepeatingTask(original, always));
     }
 
+    default void registerRepeating(MoeTask original, BooleanSupplier isDoneSupplier) {
+        register(new MoeRepeatingTask(original, isDoneSupplier));
+    }
+
     default void registerRepeatingDelay(MoeTask original, boolean always, long delay) {
         registerRepeatingDelay(original, always, delay, System.currentTimeMillis());
+    }
+
+    default void registerRepeatingDelay(MoeTask original, BooleanSupplier isDoneSupplier, long delay) {
+        registerRepeatingDelay(original, isDoneSupplier, delay, System.currentTimeMillis());
     }
 
     default void registerRepeatingDelay(MoeTask original, boolean always, long delay, long start) {
         register(new MoeRepeatingDelayedTask(original, always, delay, start));
     }
 
+    default void registerRepeatingDelay(MoeTask original, BooleanSupplier isDoneSupplier, long delay, long start) {
+        register(new MoeRepeatingDelayedTask(original, isDoneSupplier, delay, start));
+    }
+
     default void registerRepeatingTick(MoeTask original, boolean always, long delay) {
         register(new MoeRepeatingTickTask(original, always, delay));
+    }
+
+    default void registerRepeatingTick(MoeTask original, BooleanSupplier isDoneSupplier, long delay) {
+        register(new MoeRepeatingTickTask(original, isDoneSupplier, delay));
     }
 
     default void registerTick(MoeTask original, long ticks) {

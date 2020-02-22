@@ -97,6 +97,40 @@ public class SchedulerTests {
     }
 
     @Test
+    public void testRepeatAlways() {
+        final var phaser = new Phaser();
+        phaser.register();
+
+        final var atomic = new AtomicInteger();
+        scheduler.registerRepeating((d) -> {
+            final var value = atomic.incrementAndGet();
+            if (value == 50)
+                phaser.arrive();
+        }, true);
+
+        phaser.awaitAdvance(0);
+        assert atomic.get() >= 50;
+    }
+
+    @Test
+    public void testRepeatSupplier() {
+        final var phaser = new Phaser();
+        phaser.register();
+
+        final var atomic = new AtomicInteger();
+        scheduler.registerRepeating((d) -> {
+            final var value = atomic.incrementAndGet();
+            if (value == 50)
+                phaser.arrive();
+        }, () -> atomic.get() >= 50);
+
+        phaser.awaitAdvance(0);
+        assert atomic.get() >= 50;
+
+        assert scheduler.size() == 0;
+    }
+
+    @Test
     public void testRetry() {
         final var phaser = new Phaser();
         phaser.register();
@@ -104,14 +138,27 @@ public class SchedulerTests {
         final var atomic = new AtomicInteger();
 
         scheduler.register(new MoeRetryTask(
-            new MoeRepeatingTask((d) -> {
-                final var currentValue = atomic.incrementAndGet();
-                if (currentValue != 5)
-                    throw new IllegalArgumentException("No: "+currentValue);
-                phaser.arrive();
-            }, () -> atomic.get() == 5), 5));
-
+                new MoeRepeatingTask((d) -> {
+                    final var currentValue = atomic.incrementAndGet();
+                    if (currentValue != 5)
+                        throw new IllegalArgumentException("No: "+currentValue);
+                    phaser.arrive();
+                }, () -> atomic.get() == 5), 10));
         phaser.awaitAdvance(0);
     }
 
+    @Test
+    public void testRetryExceptions() {
+        final var phaser = new Phaser();
+        phaser.register();
+        final var atomic = new AtomicInteger();
+        scheduler.register(new MoeRetryTask(
+                new MoeRepeatingTask((d) -> {
+                    atomic.incrementAndGet();
+                    throw new IllegalArgumentException("Failed! :D");
+                }, true),
+                (e) -> phaser.arrive(), 10));
+        phaser.awaitAdvance(0);
+        assert atomic.get() == 10;
+    }
 }

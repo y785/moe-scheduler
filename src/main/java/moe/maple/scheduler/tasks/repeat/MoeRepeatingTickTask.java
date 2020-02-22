@@ -24,6 +24,8 @@ package moe.maple.scheduler.tasks.repeat;
 
 import moe.maple.scheduler.tasks.MoeTask;
 
+import java.util.function.BooleanSupplier;
+
 public class MoeRepeatingTickTask extends MoeRepeatingTask implements MoeTask {
 
     private final long tickCount;
@@ -32,6 +34,11 @@ public class MoeRepeatingTickTask extends MoeRepeatingTask implements MoeTask {
 
     public MoeRepeatingTickTask(MoeTask actual, boolean always, long tickCount) {
         super(actual, always);
+        this.tickCount = tickCount;
+    }
+
+    public MoeRepeatingTickTask(MoeTask actual, BooleanSupplier isDoneSupplier, long tickCount) {
+        super(actual, isDoneSupplier);
         this.tickCount = tickCount;
     }
 
