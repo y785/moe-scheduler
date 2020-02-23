@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019, y785, http://github.com/y785
+ * Copyright (C) 2020, y785, http://github.com/y785
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,28 +20,46 @@
  * SOFTWARE.
  */
 
-package moe.maple.scheduler.tasks;
+package moe.maple.scheduler.tasks.retry;
 
-@FunctionalInterface
-public interface MoeTask {
+import moe.maple.scheduler.tasks.MoeTask;
 
-    MoeTask EMPTY_TASK = (ct) -> {};
+import java.util.function.Consumer;
 
-    default boolean isEventAsync() {
-        return false;
+/**
+ * Async variant of {@link MoeRetryTask}.
+ */
+public class MoeAsyncRetryTask extends MoeRetryTask {
+
+    private volatile boolean running;
+
+    public MoeAsyncRetryTask(MoeTask actual) {
+        super(actual);
     }
 
-    default boolean isEventDone() {
+    public MoeAsyncRetryTask(MoeTask actual, int maxTries) {
+        super(actual, maxTries);
+    }
+
+    public MoeAsyncRetryTask(MoeTask actual, int maxTries, MoeTask onFailure) {
+        super(actual, maxTries, onFailure);
+    }
+
+    public MoeAsyncRetryTask(MoeTask actual, int maxTries, MoeTask onFailure, Consumer<Throwable> exceptionHandler) {
+        super(actual, maxTries, onFailure, exceptionHandler);
+    }
+
+    @Override
+    public boolean isEventAsync() {
         return true;
     }
 
-    /**
-     * This should not throw an exception.
-     * Please don't throw an exception from this. :^(
-     */
-    void update(long currentTime);
-
-    default void update() {
-        update(System.currentTimeMillis());
+    @Override
+    public void update(long currentTime) {
+        if (!running) {
+            running = true;
+            super.update(currentTime);
+            running = false;
+        }
     }
 }

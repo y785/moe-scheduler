@@ -28,6 +28,7 @@ import moe.maple.scheduler.tasks.delay.MoeDelayedTask;
 import moe.maple.scheduler.tasks.repeat.MoeRepeatingDelayedTask;
 import moe.maple.scheduler.tasks.repeat.MoeRepeatingTask;
 import moe.maple.scheduler.tasks.repeat.MoeRepeatingTickTask;
+import moe.maple.scheduler.tasks.retry.MoeAsyncRetryTask;
 import moe.maple.scheduler.tasks.retry.MoeRetryTask;
 import moe.maple.scheduler.tasks.tick.MoeTickTask;
 
@@ -156,8 +157,16 @@ public interface MoeScheduler {
      * @param maxTries         - The maximum attempt count.
      */
     default void retry(MoeTask task,
-                           int maxTries) {
-        register(new MoeRetryTask(task, maxTries));
+                       int maxTries) {
+        retry(task, maxTries, MoeTask.EMPTY_TASK);
+    }
+
+    /**
+     * Async variant, see {@link #retry(MoeTask, int)}
+     */
+    default void retryAsync(MoeTask task,
+                       int maxTries) {
+        retryAsync(task, maxTries, MoeTask.EMPTY_TASK);
     }
 
     /**
@@ -167,9 +176,18 @@ public interface MoeScheduler {
      * @param onFailure        - The task to run if this task fails.
      */
     default void retry(MoeTask task,
-                           int maxTries,
-                           MoeTask onFailure) {
-        register(new MoeRetryTask(task, maxTries, onFailure));
+                       int maxTries,
+                       MoeTask onFailure) {
+        retry(task, maxTries, onFailure, (e) -> {});
+    }
+
+    /**
+     * Async variant, see {@link #retry(MoeTask, int, MoeTask)}
+     */
+    default void retryAsync(MoeTask task,
+                       int maxTries,
+                       MoeTask onFailure) {
+        retryAsync(task, maxTries, onFailure, (e) -> {});
     }
 
     /**
@@ -180,10 +198,30 @@ public interface MoeScheduler {
      * @param exceptionHandler - The exception handler called on last exception thrown.
      */
     default void retry(MoeTask task,
-                           int maxTries,
-                           MoeTask onFailure,
-                           Consumer<Throwable> exceptionHandler) {
+                       int maxTries,
+                       MoeTask onFailure,
+                       Consumer<Throwable> exceptionHandler) {
         register(new MoeRetryTask(task, maxTries, onFailure, exceptionHandler));
+    }
+
+    /**
+     * Async variant, see {@link #retry(MoeTask, int, MoeTask, Consumer)}
+     */
+    default void retryAsync(MoeTask task,
+                       int maxTries,
+                       MoeTask onFailure,
+                       Consumer<Throwable> exceptionHandler) {
+        register(new MoeAsyncRetryTask(task, maxTries, onFailure, exceptionHandler));
+    }
+
+    /**
+     * Retry variant of {@link #future(Supplier, Consumer)}.
+     */
+    default <T> void retryFuture(Supplier<T> supplier, Consumer<T> consumer, int maxTries) {
+        retryAsync((ct1) -> {
+            final var a = supplier.get();
+            retry(ct2 -> consumer.accept(a), maxTries);
+        },  maxTries);
     }
 
     default void registerAsync(MoeTask original) {
