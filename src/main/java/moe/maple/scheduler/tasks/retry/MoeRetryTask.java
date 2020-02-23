@@ -46,7 +46,7 @@ public class MoeRetryTask implements MoeTask {
     }
 
     public MoeRetryTask(MoeTask actual, int maxTries) {
-        this(actual, maxTries, (ct) -> {}, Throwable::printStackTrace);
+        this(actual, maxTries, MoeTask.EMPTY_TASK, Throwable::printStackTrace);
     }
 
     public MoeRetryTask(MoeTask actual,
@@ -60,11 +60,11 @@ public class MoeRetryTask implements MoeTask {
                         MoeTask onFailure,
                         Consumer<Throwable> exceptionHandler) {
         if (actual == null)
-            throw new NullPointerException();
+            throw new IllegalArgumentException("Actual task is set to null.");
         if (onFailure == null)
-            throw new NullPointerException();
+            throw new NullPointerException("Failure event handler is null.");
         if (exceptionHandler == null)
-            throw new NullPointerException();
+            throw new NullPointerException("Exception handler is null.");
         this.actual = actual;
         this.maxTries = maxTries;
         this.onFailure = onFailure;

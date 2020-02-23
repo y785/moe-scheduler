@@ -136,7 +136,6 @@ public class SchedulerTests {
         phaser.register();
 
         final var atomic = new AtomicInteger();
-
         scheduler.register(new MoeRetryTask(
                 new MoeRepeatingTask((d) -> {
                     final var currentValue = atomic.incrementAndGet();
@@ -157,7 +156,9 @@ public class SchedulerTests {
                     atomic.incrementAndGet();
                     throw new IllegalArgumentException("Failed! :D");
                 }, true),
-                (e) -> phaser.arrive(), 10));
+                10,
+                (e) -> phaser.arrive()
+        ));
         phaser.awaitAdvance(0);
         assert atomic.get() == 10;
     }
