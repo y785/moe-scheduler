@@ -36,7 +36,6 @@ public class MoeRollingStats implements MoeTask, SchedulerStats {
 
     public MoeRollingStats(int period, int count) {
         this.period = period;
-        this.last = System.currentTimeMillis();
         this.times = new int[count];
     }
 
@@ -71,8 +70,12 @@ public class MoeRollingStats implements MoeTask, SchedulerStats {
 
     @Override
     public void update(long currentTime) {
-        roll((int) Math.max(currentTime - last - period, 0));
-        last = currentTime;
+        if (last == 0L) {
+            last = currentTime;
+        } else {
+            roll((int) Math.max(currentTime - last - period, 0));
+            last = currentTime;
+        }
     }
 
     @Override
