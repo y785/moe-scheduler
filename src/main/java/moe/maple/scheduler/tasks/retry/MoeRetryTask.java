@@ -94,7 +94,6 @@ public class MoeRetryTask implements MoeTask {
             if (tries >= maxTries)
                 failureHandler.accept(e);
         }
-
         if (tries >= maxTries && !actual.isEventDone())
             onFailure.update(currentTime);
     }

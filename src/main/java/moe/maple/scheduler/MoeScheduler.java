@@ -216,10 +216,13 @@ public interface MoeScheduler {
 
     /**
      * Retry variant of {@link #future(Supplier, Consumer)}.
+     * @param supplier - Supplier of a NON-NULL VALUE.
      */
     default <T> void retryFuture(Supplier<T> supplier, Consumer<T> consumer, int maxTries) {
         retryAsync((ct1) -> {
             final var a = supplier.get();
+            if (a == null)
+                throw new NullPointerException("Supplier gave null value. :(");
             retry(ct2 -> consumer.accept(a), maxTries);
         },  maxTries);
     }
