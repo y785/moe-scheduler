@@ -28,6 +28,7 @@ import moe.maple.scheduler.tasks.delay.MoeDelayedTask;
 import moe.maple.scheduler.tasks.repeat.MoeRepeatingDelayedTask;
 import moe.maple.scheduler.tasks.repeat.MoeRepeatingTask;
 import moe.maple.scheduler.tasks.repeat.MoeRepeatingTickTask;
+import moe.maple.scheduler.tasks.retry.MoeRetryTask;
 import moe.maple.scheduler.tasks.tick.MoeTickTask;
 
 import java.util.Collection;
@@ -147,6 +148,42 @@ public interface MoeScheduler {
             var a = supplier.get();
             register(d2 -> consumer.accept(a));
         }));
+    }
+
+    /**
+     * See {@link MoeRetryTask}.
+     * @param task             - The task to run.
+     * @param maxTries         - The maximum attempt count.
+     */
+    default void retry(MoeTask task,
+                           int maxTries) {
+        register(new MoeRetryTask(task, maxTries));
+    }
+
+    /**
+     * See {@link MoeRetryTask}.
+     * @param task             - The task to run.
+     * @param maxTries         - The maximum attempt count.
+     * @param onFailure        - The task to run if this task fails.
+     */
+    default void retry(MoeTask task,
+                           int maxTries,
+                           MoeTask onFailure) {
+        register(new MoeRetryTask(task, maxTries, onFailure));
+    }
+
+    /**
+     * See {@link MoeRetryTask}.
+     * @param task             - The task to run.
+     * @param maxTries         - The maximum attempt count.
+     * @param onFailure        - The task to run if this task fails.
+     * @param exceptionHandler - The exception handler called on last exception.
+     */
+    default void retry(MoeTask task,
+                           int maxTries,
+                           MoeTask onFailure,
+                           Consumer<Throwable> exceptionHandler) {
+        register(new MoeRetryTask(task, maxTries, onFailure, exceptionHandler));
     }
 
     default void registerAsync(MoeTask original) {

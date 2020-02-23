@@ -26,10 +26,19 @@ import moe.maple.scheduler.tasks.MoeTask;
 
 import java.util.function.Consumer;
 
+/**
+ * A retry task is a task that will update a {@link MoeTask} delegate,
+ * catching all exceptions. This task's {@link #isEventDone} is not set,
+ * until the delegated Task has run successfully once or the max retry amount
+ * has been reached.
+ */
 public class MoeRetryTask implements MoeTask {
 
     private final MoeTask actual;
+    private final MoeTask onFailure;
     private final Consumer<Throwable> failureHandler;
+
+    private boolean ran;
     private int tries, maxTries;
 
     public MoeRetryTask(MoeTask actual) {
@@ -37,19 +46,29 @@ public class MoeRetryTask implements MoeTask {
     }
 
     public MoeRetryTask(MoeTask actual, int maxTries) {
-        this(actual, Throwable::printStackTrace, maxTries);
+        this(actual, maxTries, (ct) -> {}, Throwable::printStackTrace);
     }
 
     public MoeRetryTask(MoeTask actual,
-                        Consumer<Throwable> exceptionHandler,
-                        int maxTries) {
+                        int maxTries,
+                        MoeTask onFailure) {
+        this(actual, maxTries, onFailure, Throwable::printStackTrace);
+    }
+
+    public MoeRetryTask(MoeTask actual,
+                        int maxTries,
+                        MoeTask onFailure,
+                        Consumer<Throwable> exceptionHandler) {
         if (actual == null)
+            throw new NullPointerException();
+        if (onFailure == null)
             throw new NullPointerException();
         if (exceptionHandler == null)
             throw new NullPointerException();
         this.actual = actual;
-        this.failureHandler = exceptionHandler;
         this.maxTries = maxTries;
+        this.onFailure = onFailure;
+        this.failureHandler = exceptionHandler;
     }
 
     @Override
@@ -59,7 +78,7 @@ public class MoeRetryTask implements MoeTask {
 
     @Override
     public boolean isEventDone() {
-        return (tries >= maxTries) || actual.isEventDone();
+        return ran && ((tries >= maxTries) || actual.isEventDone());
     }
 
     @Override
@@ -69,10 +88,14 @@ public class MoeRetryTask implements MoeTask {
         tries++;
         try {
             actual.update(currentTime);
+            ran = true;
         } catch (Exception e) {
             // Only accept the exception IF we have failed all attempts :(
             if (tries >= maxTries)
                 failureHandler.accept(e);
         }
+
+        if (tries >= maxTries && !actual.isEventDone())
+            onFailure.update(currentTime);
     }
 }
