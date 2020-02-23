@@ -153,6 +153,8 @@ public interface MoeScheduler {
 
     /**
      * See {@link MoeRetryTask}.
+     * tldr: "Well, if an exception is thrown or something breaks,
+     *        just keep retrying until it works."
      * @param task             - The task to run.
      * @param maxTries         - The maximum attempt count.
      */

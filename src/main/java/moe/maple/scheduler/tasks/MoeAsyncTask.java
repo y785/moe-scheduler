@@ -24,7 +24,7 @@ package moe.maple.scheduler.tasks;
 
 public class MoeAsyncTask implements MoeTask {
 
-    private final MoeTask actual;
+    private final MoeTask delegate;
     private volatile boolean running;
 
     private final MoeTask onDone;
@@ -33,10 +33,10 @@ public class MoeAsyncTask implements MoeTask {
         this(actual, (d) -> { });
     }
 
-    public MoeAsyncTask(MoeTask actual, MoeTask onDone) {
-        if (actual == null)
-            throw new IllegalArgumentException("Actual task is set to null.");
-        this.actual = actual;
+    public MoeAsyncTask(MoeTask delegate, MoeTask onDone) {
+        if (delegate == null)
+            throw new IllegalArgumentException("Delegated task is null.");
+        this.delegate = delegate;
         this.onDone = onDone;
     }
 
@@ -47,15 +47,15 @@ public class MoeAsyncTask implements MoeTask {
 
     @Override
     public boolean isEventDone() {
-        return actual.isEventDone();
+        return delegate.isEventDone();
     }
 
     @Override
     public void update(long currentTime) {
         if (!running) {
             running = true;
-            actual.update(currentTime);
-            if (actual.isEventDone())
+            delegate.update(currentTime);
+            if (delegate.isEventDone())
                 onDone.update(currentTime);
             running = false;
         }

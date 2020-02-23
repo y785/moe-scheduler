@@ -32,13 +32,13 @@ public class MoeRepeatingTickTask extends MoeRepeatingTask implements MoeTask {
     private long iteration;
     private boolean ran;
 
-    public MoeRepeatingTickTask(MoeTask actual, boolean always, long tickCount) {
-        super(actual, always);
+    public MoeRepeatingTickTask(MoeTask delegate, boolean always, long tickCount) {
+        super(delegate, always);
         this.tickCount = tickCount;
     }
 
-    public MoeRepeatingTickTask(MoeTask actual, BooleanSupplier isDoneSupplier, long tickCount) {
-        super(actual, isDoneSupplier);
+    public MoeRepeatingTickTask(MoeTask delegate, BooleanSupplier isDoneSupplier, long tickCount) {
+        super(delegate, isDoneSupplier);
         this.tickCount = tickCount;
     }
 

@@ -28,41 +28,41 @@ import java.util.function.BooleanSupplier;
 
 public class MoeRepeatingTask implements MoeTask {
 
-    private final MoeTask actual;
+    private final MoeTask delegate;
 
     private boolean always;
     private BooleanSupplier isDoneSupplier;
 
-    public MoeRepeatingTask(MoeTask actual, boolean always) {
-        this(actual);
+    public MoeRepeatingTask(MoeTask delegate, boolean always) {
+        this(delegate);
         this.always = always;
     }
 
-    public MoeRepeatingTask(MoeTask actual, BooleanSupplier isDoneSupplier) {
-        this(actual);
+    public MoeRepeatingTask(MoeTask delegate, BooleanSupplier isDoneSupplier) {
+        this(delegate);
         this.isDoneSupplier = isDoneSupplier;
     }
 
-    public  MoeRepeatingTask(MoeTask actual) {
-        if (actual == null)
-            throw new IllegalArgumentException("Actual task is set to null.");
-        this.actual = actual;
+    public  MoeRepeatingTask(MoeTask delegate) {
+        if (delegate == null)
+            throw new IllegalArgumentException("Delegated task is null.");
+        this.delegate = delegate;
     }
 
     @Override
     public boolean isEventAsync() {
-        return actual.isEventAsync();
+        return delegate.isEventAsync();
     }
 
     @Override
     public boolean isEventDone() {
         return isDoneSupplier == null
-                ? (!always && actual.isEventDone())
+                ? (!always && delegate.isEventDone())
                 : (isDoneSupplier.getAsBoolean());
     }
 
     @Override
     public void update(long currentTime) {
-        actual.update(currentTime);
+        delegate.update(currentTime);
     }
 }

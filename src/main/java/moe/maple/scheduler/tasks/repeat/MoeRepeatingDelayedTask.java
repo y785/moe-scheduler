@@ -33,14 +33,14 @@ public class MoeRepeatingDelayedTask extends MoeRepeatingTask implements MoeTask
 
     private boolean ran;
 
-    public MoeRepeatingDelayedTask(MoeTask actual, boolean always, long delay, long start) {
-        super(actual, always);
+    public MoeRepeatingDelayedTask(MoeTask delegate, boolean always, long delay, long start) {
+        super(delegate, always);
         this.delay = delay;
         this.start = start;
     }
 
-    public MoeRepeatingDelayedTask(MoeTask actual, BooleanSupplier isDoneSupplier, long delay, long start) {
-        super(actual, isDoneSupplier);
+    public MoeRepeatingDelayedTask(MoeTask delegate, BooleanSupplier isDoneSupplier, long delay, long start) {
+        super(delegate, isDoneSupplier);
         this.delay = delay;
         this.start = start;
     }

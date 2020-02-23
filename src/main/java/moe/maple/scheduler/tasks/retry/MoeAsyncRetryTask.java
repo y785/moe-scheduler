@@ -33,8 +33,8 @@ public class MoeAsyncRetryTask extends MoeRetryTask {
 
     private volatile boolean running;
 
-    public MoeAsyncRetryTask(MoeTask actual) {
-        super(actual);
+    public MoeAsyncRetryTask(MoeTask delegate) {
+        super(delegate);
     }
 
     public MoeAsyncRetryTask(MoeTask actual, int maxTries) {

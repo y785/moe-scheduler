@@ -26,29 +26,29 @@ import moe.maple.scheduler.tasks.MoeTask;
 
 public class MoeTickTask implements MoeTask {
 
-    private final MoeTask actual;
+    private final MoeTask delegate;
     private final long tickCount;
     private long iteration;
 
     private boolean hasRun;
 
-    public MoeTickTask(MoeTask actual, long tickCount) {
-        if (actual == null)
-            throw new IllegalArgumentException("Actual task is set to null.");
+    public MoeTickTask(MoeTask delegate, long tickCount) {
+        if (delegate == null)
+            throw new IllegalArgumentException("Delegated task is null.");
         if (tickCount == 0)
             throw new IllegalArgumentException("Tick Count is 0, please.");
-        this.actual = actual;
+        this.delegate = delegate;
         this.tickCount = tickCount;
     }
 
     @Override
     public boolean isEventAsync() {
-        return actual.isEventAsync();
+        return delegate.isEventAsync();
     }
 
     @Override
     public boolean isEventDone() {
-        return hasRun && actual.isEventDone();
+        return hasRun && delegate.isEventDone();
     }
 
     @Override
@@ -56,7 +56,7 @@ public class MoeTickTask implements MoeTask {
         iteration++;
 
         if (!hasRun && iteration >= tickCount) {
-            actual.update(currentTime);
+            delegate.update(currentTime);
             iteration = 0;
             hasRun = true;
         }

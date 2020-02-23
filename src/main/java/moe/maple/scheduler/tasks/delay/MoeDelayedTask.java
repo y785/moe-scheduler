@@ -26,39 +26,39 @@ import moe.maple.scheduler.tasks.MoeTask;
 
 public class MoeDelayedTask implements MoeTask {
 
-    private final MoeTask actual;
+    private final MoeTask delegate;
 
     private long start;
     private final long delay;
 
     private boolean hasRun;
 
-    public MoeDelayedTask(MoeTask actual, long delay, long start) {
-        if (actual == null)
-            throw new IllegalArgumentException("Actual task is set to null.");
-        this.actual = actual;
+    public MoeDelayedTask(MoeTask delegate, long delay) {
+        this(delegate, delay, System.currentTimeMillis());
+    }
+
+    public MoeDelayedTask(MoeTask delegate, long delay, long start) {
+        if (delegate == null)
+            throw new IllegalArgumentException("Delegated task is null.");
+        this.delegate = delegate;
         this.delay = delay;
         this.start = start;
     }
 
-    public MoeDelayedTask(MoeTask actual, long delay) {
-        this(actual, delay, System.currentTimeMillis());
-    }
-
     @Override
     public boolean isEventAsync() {
-        return actual.isEventAsync();
+        return delegate.isEventAsync();
     }
 
     @Override
     public boolean isEventDone() {
-        return hasRun && actual.isEventDone();
+        return hasRun && delegate.isEventDone();
     }
 
     @Override
     public void update(long currentTime) {
         if (!hasRun && currentTime - start >= delay) {
-            actual.update(currentTime);
+            delegate.update(currentTime);
             start = System.currentTimeMillis();
             hasRun = true;
         }
