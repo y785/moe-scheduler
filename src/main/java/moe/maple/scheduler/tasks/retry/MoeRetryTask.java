@@ -28,7 +28,7 @@ import java.util.function.Consumer;
 
 /**
  * A retry task is a task that will update a {@link MoeTask} delegate,
- * catching all exceptions. This task's {@link #isEventDone} is not set,
+ * catching all exceptions. This task's {@link #isEventDone} is not set
  * until the delegated Task has run successfully once or the max retry amount
  * has been reached.
  */

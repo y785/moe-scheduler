@@ -177,7 +177,7 @@ public interface MoeScheduler {
      * @param task             - The task to run.
      * @param maxTries         - The maximum attempt count.
      * @param onFailure        - The task to run if this task fails.
-     * @param exceptionHandler - The exception handler called on last exception.
+     * @param exceptionHandler - The exception handler called on last exception thrown.
      */
     default void retry(MoeTask task,
                            int maxTries,
