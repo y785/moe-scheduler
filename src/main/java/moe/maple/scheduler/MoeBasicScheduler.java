@@ -35,11 +35,11 @@ public final class MoeBasicScheduler implements MoeScheduler {
     private final String name;
     private final int delay, period;
 
-    private final MoeBasicThreadFactory factory;
+    private final ThreadFactory factory;
     private ScheduledExecutorService executor;
     private final ScheduledExecutorService asyncExecutor;
 
-    private final MoeRollingStats telescope;
+    private final MoeRollingStats stats;
     private final Queue<MoeTask> registry;
 
     private ScheduledFuture<?> updateLoop;
@@ -48,28 +48,46 @@ public final class MoeBasicScheduler implements MoeScheduler {
     private MoeTask lastTask;
     private long lastUpdate;
 
-    private Consumer<Exception> exceptionConsumer;
+    private Consumer<Throwable> exceptionHandler;
 
-    public MoeBasicScheduler(Consumer<Exception> exceptionConsumer, String name, int delay, int period) {
-        this.exceptionConsumer = exceptionConsumer;
+    public MoeBasicScheduler(Consumer<Throwable> exceptionHandler,
+                             String name,
+                             int delay,
+                             int period,
+                             MoeRollingStats stats,
+                             ThreadFactory threadFactory,
+                             ScheduledExecutorService executor,
+                             ScheduledExecutorService asyncExecutor) {
+        this.exceptionHandler = exceptionHandler;
         this.name = name;
         this.delay = delay;
         this.period = period;
-
-        this.factory = new MoeBasicThreadFactory(name);
-        this.executor = Executors.newSingleThreadScheduledExecutor(factory);
-        this.asyncExecutor = new ScheduledThreadPoolExecutor(MoeScheduler.THREADS, factory);
-
-        this.telescope = new MoeRollingStats(period);
+        this.stats = stats;
+        this.factory = threadFactory;
+        this.executor = executor;
+        this.asyncExecutor = asyncExecutor;
         this.registry = new ConcurrentLinkedQueue<>();
     }
 
-    public MoeBasicScheduler(Consumer<Exception> exceptionConsumer, String name) {
-        this(exceptionConsumer, name, 0, MoeScheduler.DEFAULT_PERIOD);
+    public MoeBasicScheduler(Consumer<Throwable> exceptionHandler,
+                             String name,
+                             int delay,
+                             int period,
+                             MoeRollingStats stats,
+                             ThreadFactory threadFactory) {
+        this(exceptionHandler, name, delay, period, stats, threadFactory, Executors.newSingleThreadScheduledExecutor(threadFactory), new ScheduledThreadPoolExecutor(MoeScheduler.DEFAULT_THREAD_COUNT, threadFactory));
     }
 
-    public MoeBasicScheduler(Consumer<Exception> exceptionConsumer) {
-        this(exceptionConsumer, "moe", 0, MoeScheduler.DEFAULT_PERIOD);
+    public MoeBasicScheduler(Consumer<Throwable> exceptionHandler, String name, int delay, int period) {
+        this(exceptionHandler, name, delay, period, new MoeRollingStats(period), new MoeBasicThreadFactory());
+    }
+
+    public MoeBasicScheduler(Consumer<Throwable> exceptionHandler, String name) {
+        this(exceptionHandler, name, 0, MoeScheduler.DEFAULT_PERIOD);
+    }
+
+    public MoeBasicScheduler(Consumer<Throwable> exceptionHandler) {
+        this(exceptionHandler, "moe", 0, MoeScheduler.DEFAULT_PERIOD);
     }
 
     public MoeBasicScheduler() {
@@ -105,7 +123,7 @@ public final class MoeBasicScheduler implements MoeScheduler {
 
     @Override
     public SchedulerStats stats() {
-        return telescope;
+        return stats;
     }
 
     @Override
@@ -143,7 +161,7 @@ public final class MoeBasicScheduler implements MoeScheduler {
             final var currentTime = System.currentTimeMillis();
             update(currentTime);
             lastUpdate = currentTime;
-            telescope.update(currentTime);
+            stats.update(currentTime);
         }, delay, period, TimeUnit.MILLISECONDS);
         register(() -> updateThread = Thread.currentThread());
     }
@@ -177,13 +195,13 @@ public final class MoeBasicScheduler implements MoeScheduler {
             asyncExecutor.submit(() -> {
                 try {
                     task.update(currentTime);
-                } catch (Exception e) { exceptionConsumer.accept(e); }
+                } catch (Exception e) { exceptionHandler.accept(e); }
             });
         } else {
             try {
                 this.lastTask = task;
                 task.update(currentTime);
-            } catch (Exception e) { exceptionConsumer.accept(e); }
+            } catch (Exception e) { exceptionHandler.accept(e); }
         }
     }
 
@@ -205,7 +223,7 @@ public final class MoeBasicScheduler implements MoeScheduler {
                 .append(", Executor: ").append(executor.isTerminated())
                 .append(", Async: ").append(asyncExecutor.isTerminated())
                 .append("\r\n")
-                .append(prefix).append(" Telescope: ").append(telescope);
+                .append(prefix).append(" Telescope: ").append(stats);
         return sb.toString();
     }
 
@@ -218,7 +236,7 @@ public final class MoeBasicScheduler implements MoeScheduler {
                 var sb = new StringBuilder();
                 for (var s : stack) sb.append(s.toString()).append("\r\n");
 
-                exceptionConsumer.accept(new SchedulerException("REMOVING THE LAST TASK THAT RAN FROM THE QUEUE. Update loop is broke, last update was over 5 seconds ago! StackTrace of presumed loop thread:\r\n"+sb.toString()));
+                exceptionHandler.accept(new SchedulerException("REMOVING THE LAST TASK THAT RAN FROM THE QUEUE. Update loop is broke, last update was over 5 seconds ago! StackTrace of presumed loop thread:\r\n"+sb.toString()));
                 // Loop thread needs to be reset. :(
 
                 // Remove the last task that ran. We assume this task is the cause of the deadlock.
