@@ -152,6 +152,27 @@ public interface MoeScheduler {
     }
 
     /**
+     * See {@link #future(Supplier, Consumer)}
+     * @param exceptionHandler - The exception handler for supplier OR consumer exceptions.
+     */
+    default <T> void future(Supplier<T> supplier, Consumer<T> consumer, Consumer<Throwable> exceptionHandler) {
+        registerAsync(((d1) -> {
+            try {
+                var supplied = supplier.get();
+                register(d2 -> {
+                    try {
+                        consumer.accept(supplied);
+                    } catch (Exception consumerException) {
+                        exceptionHandler.accept(consumerException);
+                    }
+                });
+            } catch (Exception supplierException) {
+                exceptionHandler.accept(supplierException);
+            }
+        }));
+    }
+
+    /**
      * See {@link MoeRetryTask}.
      * tldr: "Well, if an exception is thrown or something breaks,
      *        just keep retrying until it works."
